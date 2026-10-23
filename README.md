@@ -340,28 +340,7 @@ A：下单时服务端会在事务内复查该场次座位占用情况，说明�
 
 ---
 
-## 十三、提交规范
-
-采用 Conventional Commits：
-
-```
-<type>(<scope>): <subject>
-
-feat: 新增功能
-fix: 缺陷修复
-docs: 文档变更
-style: 代码格式（不影响逻辑）
-refactor: 重构
-chore: 构建/工具链
-```
-
-示例：`feat(order): 新增清除历史订单接口与入口`
-
-分支约定：`main` 保持可运行，功能开发走 `feature/xxx`，修复走 `fix/xxx`。
-
----
-
-## 十四、相关文档
+## 十三、相关文档
 
 - [数据库设计](docs/数据库设计.md)：ER 图（Mermaid）、实体关系、索引设计与数据规模
 - [API 接口文档](docs/API接口文档.md)：全部接口的参数、响应示例、错误码与联调示例

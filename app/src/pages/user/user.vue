@@ -68,45 +68,95 @@ function onLogout() {
 </script>
 
 <style scoped lang="scss">
+/* ---------- 用户信息头 ---------- */
 .profile {
   display: flex;
   align-items: center;
-  background: $brand-red;
-  padding: 48rpx 32rpx;
+  padding: 52rpx $sp-lg 76rpx;
+  background: linear-gradient(160deg, #F6EDE2 0%, #FBF1DD 60%, $bg-color 100%);
+
   &__avatar {
-    width: 120rpx;
-    height: 120rpx;
+    position: relative;
+    flex-shrink: 0;
+    width: 128rpx;
+    height: 128rpx;
     border-radius: 50%;
-    background: rgba(255,255,255,0.2);
+    background: $c-primary;
     color: #fff;
     text-align: center;
-    line-height: 120rpx;
-    font-size: 48rpx;
+    line-height: 128rpx;
+    font-size: 52rpx;
     font-weight: 700;
+    box-shadow: 0 10rpx 24rpx rgba(185, 70, 47, 0.25);
+    box-sizing: border-box;
+    border: 6rpx solid #fff;
   }
-  &__info { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
-  &__name { color: #fff; font-size: 36rpx; font-weight: 700; }
-  &__acc { color: rgba(255,255,255,0.85); font-size: 24rpx; margin-top: 8rpx; }
+
+  &__info {
+    flex: 1;
+    margin-left: $sp-md;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    color: $text-main;
+    font-size: $fs-large;
+    font-weight: 700;
+    letter-spacing: 1rpx;
+  }
+
+  &__acc {
+    margin-top: 10rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
   &__action {
-    color: $brand-red;
-    background: #fff;
-    border-radius: 30rpx;
+    flex-shrink: 0;
+    margin-left: $sp-sm;
     padding: 14rpx 32rpx;
-    font-size: 26rpx;
+    font-size: $fs-caption;
+    font-weight: 600;
+    color: #fff;
+    background: $c-primary;
+    border-radius: $radius-pill;
+    box-shadow: 0 8rpx 18rpx rgba(185, 70, 47, 0.22);
   }
 }
 
-.menu { padding: 8rpx 24rpx; }
+/* ---------- 菜单 ---------- */
+.menu {
+  margin: -40rpx $sp-md 0;
+  padding: $sp-xs $sp-md;
+
+  & + & { margin-top: $sp-md; }
+}
+
 .menu__item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid $border-color;
-  font-size: 28rpx;
+  padding: 30rpx 0;
+  font-size: $fs-body;
+  color: $text-main;
+  border-bottom: 1rpx dashed $border-color;
+
   &:last-child { border-bottom: none; }
 }
-.menu__arrow { color: $text-sub; font-size: 32rpx; }
 
-.footer { text-align: center; color: $text-sub; font-size: 22rpx; padding: 40rpx 0; }
+.menu__arrow {
+  color: $text-light;
+  font-size: 34rpx;
+  line-height: 1;
+}
+
+.footer {
+  text-align: center;
+  color: $text-light;
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  padding: 48rpx 0 24rpx;
+}
 </style>

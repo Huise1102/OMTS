@@ -63,49 +63,138 @@ function goBuy() {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 160rpx; }
+.page { padding-bottom: 170rpx; }
 
+/* ---------- 海报区 ---------- */
 .hero {
   display: flex;
-  padding: 32rpx 24rpx;
-  background: $brand-dark;
-  &__info { flex: 1; margin-left: 32rpx; display: flex; flex-direction: column; }
-  &__title { color: #fff; font-size: 40rpx; font-weight: 700; }
-  &__rating { display: flex; align-items: baseline; margin-top: 12rpx; }
-  &__score { color: $brand-gold; font-size: 52rpx; font-weight: 700; }
-  &__score-sub { color: $brand-gold; font-size: 24rpx; }
-  &__meta { color: rgba(255,255,255,0.8); font-size: 24rpx; margin-top: 8rpx; }
-  &__tags { display: flex; flex-wrap: wrap; margin-top: 20rpx; }
+  padding: 40rpx $sp-md 36rpx;
+  background: linear-gradient(165deg, #F6EDE2 0%, #FAF7F2 100%);
+
+  &__info {
+    flex: 1;
+    margin-left: 32rpx;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__title {
+    color: $text-main;
+    font-size: $fs-large;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  &__rating {
+    display: flex;
+    align-items: baseline;
+    margin-top: 14rpx;
+  }
+
+  &__score {
+    color: $c-gold;
+    font-size: 56rpx;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  &__score-sub {
+    color: $c-gold;
+    font-size: $fs-caption;
+    margin-left: 4rpx;
+  }
+
+  &__meta {
+    margin-top: 16rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+    line-height: 1.6;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20rpx;
+  }
 }
+
 .tag {
-  color: $brand-gold;
-  border: 1rpx solid $brand-gold;
-  border-radius: 8rpx;
+  color: $c-primary;
+  background: $c-primary-soft;
+  border-radius: $radius-sm;
   padding: 4rpx 16rpx;
-  font-size: 22rpx;
+  font-size: 20rpx;
   margin-right: 12rpx;
   margin-bottom: 12rpx;
 }
 
-.row { display: flex; padding: 14rpx 0; border-bottom: 1rpx solid $border-color; &:last-child { border-bottom: none; } }
-.row__label { width: 140rpx; color: $text-sub; font-size: 26rpx; }
-.row__val { flex: 1; font-size: 26rpx; }
+/* ---------- 信息行 ---------- */
+.row {
+  display: flex;
+  padding: 16rpx 0;
+  border-bottom: 1rpx dashed $border-color;
 
-.card__title { font-size: 30rpx; font-weight: 600; margin-bottom: 16rpx; }
-.desc { font-size: 26rpx; color: $text-main; line-height: 1.7; }
+  &:last-child { border-bottom: none; }
+}
 
+.row__label {
+  width: 150rpx;
+  color: $text-sub;
+  font-size: $fs-small;
+}
+
+.row__val {
+  flex: 1;
+  font-size: $fs-small;
+  color: $text-main;
+  line-height: 1.6;
+}
+
+/* ---------- 简介 ---------- */
+.card__title {
+  display: flex;
+  align-items: center;
+  font-size: $fs-title;
+  font-weight: 700;
+  margin-bottom: $sp-sm;
+
+  &::before {
+    content: '';
+    width: 6rpx;
+    height: 28rpx;
+    margin-right: 14rpx;
+    border-radius: 6rpx;
+    background: $c-gold;
+  }
+}
+
+.desc {
+  font-size: $fs-small;
+  color: $text-sub;
+  line-height: 1.8;
+}
+
+/* ---------- 底部购票 ---------- */
 .footer {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx $sp-md calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1rpx solid $border-color;
+
   &__btn {
-    background: $brand-red;
+    background: $c-primary;
     color: #fff;
     text-align: center;
-    border-radius: 44rpx;
-    padding: 24rpx 0;
-    font-size: 32rpx;
+    border-radius: $radius-pill;
+    padding: 26rpx 0;
+    font-size: $fs-title;
+    font-weight: 600;
+
+    &:active { background: $c-primary-dark; }
   }
 }
 </style>

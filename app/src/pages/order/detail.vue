@@ -8,7 +8,7 @@
 
     <!-- 影票信息 -->
     <view class="card ticket">
-      <movie-poster :title="order.movie_title" :width="100" :height="140" />
+      <movie-poster :title="order.movie_title" :width="130" :height="182" />
       <view class="ticket__info">
         <text class="ticket__title">{{ order.movie_title }}</text>
         <text class="ticket__meta">{{ order.cinema_name }} · {{ order.hall_name }}</text>
@@ -135,69 +135,176 @@ function onRefund() {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 180rpx; }
+.page { padding-bottom: 190rpx; }
 
+/* ---------- 票头 ---------- */
 .status-card {
-  background: $brand-red;
-  padding: 40rpx 24rpx;
   display: flex;
   flex-direction: column;
-  &__text { color: #fff; font-size: 40rpx; font-weight: 700; }
-  &__no { color: rgba(255,255,255,0.85); font-size: 22rpx; margin-top: 8rpx; }
+  padding: 40rpx $sp-md 44rpx;
+  background: linear-gradient(150deg, #F6EDE2 0%, #FBF1DD 100%);
+  border-bottom: 1rpx solid $border-color;
+
+  &__text {
+    color: $text-main;
+    font-size: 44rpx;
+    font-weight: 700;
+    letter-spacing: 1rpx;
+  }
+
+  &__no {
+    margin-top: 10rpx;
+    font-size: 20rpx;
+    letter-spacing: 1rpx;
+    color: $text-sub;
+  }
 }
 
+/* ---------- 影票信息 ---------- */
 .ticket {
   display: flex;
-  &__info { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
-  &__title { font-size: 30rpx; font-weight: 600; }
-  &__meta { font-size: 24rpx; color: $text-sub; margin-top: 8rpx; }
-  &__seats { font-size: 26rpx; margin-top: 8rpx; }
+
+  &__info {
+    flex: 1;
+    margin-left: $sp-md;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $fs-title;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  &__meta {
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
+  &__seats {
+    margin-top: 12rpx;
+    font-size: $fs-small;
+    color: $c-primary;
+    font-weight: 600;
+  }
 }
 
-.card__title { font-size: 30rpx; font-weight: 600; margin-bottom: 20rpx; }
-.qr { display: flex; flex-direction: column; align-items: center; }
+/* ---------- 卡片标题 ---------- */
+.card__title {
+  display: flex;
+  align-items: center;
+  font-size: $fs-title;
+  font-weight: 700;
+  margin-bottom: $sp-md;
+
+  &::before {
+    content: '';
+    width: 6rpx;
+    height: 28rpx;
+    margin-right: 14rpx;
+    border-radius: 6rpx;
+    background: $c-gold;
+  }
+}
+
+/* ---------- 取票码 ---------- */
+.qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: $sp-xs;
+}
+
 .qr__box {
   background: #fff;
-  border: 2rpx dashed $brand-red;
-  border-radius: 12rpx;
+  border: 2rpx dashed $c-gold;
+  border-radius: $radius-md;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .qr__grid {
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
 }
+
 .qr__cell {
   width: 5px;
   height: 5px;
   box-sizing: border-box;
 }
-.qr__cell.dark { background: #1a1a1a; }
-.qr__code { font-size: 22rpx; letter-spacing: 4rpx; word-break: break-all; text-align: center; color: $brand-red; margin-top: 12rpx; }
-.qr__tip { font-size: 22rpx; color: $text-sub; margin-top: 8rpx; }
 
-.row { display: flex; justify-content: space-between; padding: 14rpx 0; }
-.row__label { color: $text-sub; font-size: 26rpx; }
-.row__val { font-size: 26rpx; }
+.qr__cell.dark { background: #241B16; }
 
+.qr__code {
+  margin-top: $sp-sm;
+  font-size: 20rpx;
+  letter-spacing: 4rpx;
+  word-break: break-all;
+  text-align: center;
+  color: $c-primary;
+}
+
+.qr__tip {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: $text-light;
+}
+
+/* ---------- 金额行 ---------- */
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14rpx 0;
+  border-bottom: 1rpx dashed $border-color;
+
+  &:last-child { border-bottom: none; }
+}
+
+.row__label {
+  color: $text-sub;
+  font-size: $fs-small;
+}
+
+.row__val {
+  font-size: $fs-small;
+  color: $text-main;
+}
+
+/* ---------- 底部操作 ---------- */
 .footer {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  background: #fff;
-  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
+  padding: 20rpx $sp-md calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1rpx solid $border-color;
+
   &__btn {
     flex: 1;
-    background: $brand-red;
+    background: $c-primary;
     color: #fff;
     text-align: center;
-    border-radius: 44rpx;
+    border-radius: $radius-pill;
     padding: 24rpx 0;
-    font-size: 30rpx;
-    &--plain { background: #fff; color: $brand-red; border: 1rpx solid $brand-red; margin-right: 20rpx; }
+    font-size: $fs-body;
+    font-weight: 600;
+
+    &--plain {
+      background: transparent;
+      color: $c-primary;
+      border: 1rpx solid $c-primary;
+      margin-right: $sp-sm;
+      font-weight: 400;
+    }
   }
 }
 </style>

@@ -51,7 +51,7 @@
     <!-- 列表 -->
     <view class="list">
       <view v-for="m in movies" :key="m.id" class="movie" @tap="goDetail(m)">
-        <movie-poster :title="m.title" :sub="m.version" :width="120" :height="168" />
+        <movie-poster :title="m.title" :sub="m.version" :width="150" :height="210" />
         <view class="movie__info">
           <text class="movie__title">{{ m.title }}</text>
           <text class="movie__rating">{{ fmtRating(m.rating) }}分</text>
@@ -149,84 +149,179 @@ function goBuy(m) {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 40rpx; }
+.page { padding-bottom: 48rpx; }
 
-.toolbar { padding: 20rpx 24rpx 0; }
+/* ---------- 搜索 ---------- */
+.toolbar { padding: $sp-md $sp-md 0; }
+
 .search {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: 40rpx;
-  padding: 8rpx 8rpx 8rpx 30rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
-  &__input { flex: 1; font-size: 26rpx; }
+  padding: 8rpx 8rpx 8rpx 28rpx;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-pill;
+  box-shadow: $shadow-card;
+
+  &__input {
+    flex: 1;
+    font-size: $fs-small;
+    height: 64rpx;
+    color: $text-main;
+  }
+
   &__btn {
-    background: $brand-red;
+    background: $c-primary;
     color: #fff;
-    border-radius: 32rpx;
-    padding: 14rpx 32rpx;
-    font-size: 26rpx;
+    border-radius: $radius-pill;
+    padding: 16rpx 34rpx;
+    font-size: $fs-small;
+    font-weight: 600;
   }
 }
 
+/* ---------- 状态切换（下划线式） ---------- */
 .tabs {
   display: flex;
-  margin: 20rpx 24rpx 0;
-  background: #fff;
-  border-radius: 12rpx;
-  overflow: hidden;
+  margin: $sp-md $sp-md 0;
+  border-bottom: 1rpx solid $border-color;
 }
+
 .tab {
   flex: 1;
   text-align: center;
-  padding: 20rpx 0;
-  font-size: 28rpx;
+  padding: 20rpx 0 18rpx;
+  font-size: $fs-body;
   color: $text-sub;
-  &.active { color: $brand-red; font-weight: 600; }
+  position: relative;
+
+  &.active {
+    color: $text-main;
+    font-weight: 700;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -1rpx;
+      transform: translateX(-50%);
+      width: 56rpx;
+      height: 4rpx;
+      border-radius: 4rpx;
+      background: $c-primary;
+    }
+  }
 }
 
-.cats { white-space: nowrap; padding: 20rpx 24rpx 0; }
+/* ---------- 类型筛选 ---------- */
+.cats {
+  white-space: nowrap;
+  padding: $sp-md $sp-md 0;
+}
+
 .cat {
   display: inline-block;
-  background: #fff;
+  background: $card-bg;
   border: 1rpx solid $border-color;
-  border-radius: 30rpx;
+  border-radius: $radius-pill;
   padding: 10rpx 28rpx;
-  margin-right: 16rpx;
-  font-size: 24rpx;
+  margin-right: $sp-sm;
+  font-size: $fs-caption;
   color: $text-sub;
-  &.active { background: $brand-red; color: #fff; border-color: $brand-red; }
+
+  &.active {
+    background: $c-primary;
+    border-color: $c-primary;
+    color: #fff;
+    font-weight: 600;
+  }
 }
 
-.sorts { display: flex; padding: 20rpx 24rpx 0; }
+/* ---------- 排序 ---------- */
+.sorts {
+  display: flex;
+  padding: $sp-md $sp-md 0;
+}
+
 .sort {
-  margin-right: 40rpx;
-  font-size: 26rpx;
+  margin-right: 44rpx;
+  font-size: $fs-small;
   color: $text-sub;
-  &.active { color: $brand-red; font-weight: 600; }
+
+  &.active {
+    color: $c-primary;
+    font-weight: 700;
+  }
 }
 
-.list { padding: 8rpx 24rpx 0; }
+/* ---------- 影片列表 ---------- */
+.list { padding: $sp-sm $sp-md 0; }
+
 .movie {
   display: flex;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-top: 20rpx;
-  &__info { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
-  &__title { font-size: 30rpx; font-weight: 600; }
-  &__rating { color: $price-color; font-size: 24rpx; margin-top: 6rpx; }
-  &__meta { font-size: 24rpx; color: $text-sub; margin-top: 6rpx; }
-  &__desc { font-size: 22rpx; color: $text-sub; margin-top: 6rpx; }
-  &__action { display: flex; align-items: center; }
-}
-.buy {
-  background: $brand-red;
-  color: #fff;
-  border-radius: 34rpx;
-  padding: 14rpx 34rpx;
-  font-size: 26rpx;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-md;
+  padding: $sp-md;
+  margin-top: $sp-sm;
+  box-shadow: $shadow-card;
+
+  &__info {
+    flex: 1;
+    margin-left: $sp-md;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $fs-title;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  &__rating {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    font-weight: 700;
+    color: $c-gold;
+    background: $c-gold-soft;
+    border-radius: $radius-sm;
+    padding: 2rpx 12rpx;
+  }
+
+  &__meta {
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
+  &__desc {
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    color: $text-light;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    padding-left: $sp-sm;
+  }
 }
 
-.empty { text-align: center; color: $text-sub; padding: 80rpx 0; }
+.buy {
+  background: $c-primary;
+  color: #fff;
+  border-radius: $radius-pill;
+  padding: 14rpx 32rpx;
+  font-size: $fs-caption;
+  font-weight: 600;
+
+  &:active { background: $c-primary-dark; }
+}
 </style>

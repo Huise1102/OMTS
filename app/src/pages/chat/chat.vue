@@ -174,98 +174,188 @@ function confirmAction(i) {
 </script>
 
 <style scoped lang="scss">
-.page { display: flex; flex-direction: column; height: 100vh; }
+.page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--window-top, 0px) - var(--window-bottom, 0px));
+}
 
+/* ---------- 顶部工具条 ---------- */
 .toolbar {
   display: flex;
   justify-content: flex-end;
-  padding: 12rpx 24rpx;
-  background: #fff;
+  padding: 12rpx $sp-md;
+  background: $bg-color;
   border-bottom: 1rpx solid $border-color;
 }
+
 .toolbar__btn {
-  margin-left: 20rpx;
-  font-size: 24rpx;
-  color: $brand-red;
-  border: 1rpx solid $brand-red;
-  border-radius: 26rpx;
+  margin-left: $sp-sm;
   padding: 8rpx 24rpx;
+  font-size: $fs-caption;
+  color: $c-primary;
+  border: 1rpx solid $c-primary;
+  border-radius: $radius-pill;
 }
+
+/* ---------- 历史会话 ---------- */
 .sessions {
-  background: #fff;
-  border-bottom: 1rpx solid $border-color;
   max-height: 480rpx;
+  background: $card-bg;
+  border-bottom: 1rpx solid $border-color;
 }
+
 .session {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 24rpx;
-  border-bottom: 1rpx solid $border-color;
-}
-.session__title { font-size: 26rpx; color: $text-main; }
-.session__time { font-size: 22rpx; color: $text-sub; }
-.session__empty { text-align: center; color: $text-sub; font-size: 24rpx; padding: 30rpx 0; }
+  padding: 20rpx $sp-md;
+  border-bottom: 1rpx dashed $border-color;
 
-.msg-list { flex: 1; padding: 24rpx; box-sizing: border-box; overflow: hidden; }
-.msg { margin-bottom: 24rpx; display: flex; flex-direction: column; }
+  &:last-child { border-bottom: none; }
+}
+
+.session__title {
+  font-size: $fs-small;
+  color: $text-main;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session__time {
+  flex-shrink: 0;
+  margin-left: $sp-sm;
+  font-size: 20rpx;
+  color: $text-light;
+}
+
+.session__empty {
+  text-align: center;
+  color: $text-light;
+  font-size: $fs-caption;
+  padding: 30rpx 0;
+}
+
+/* ---------- 消息列表 ---------- */
+.msg-list {
+  flex: 1;
+  padding: $sp-md;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: $sp-md;
+}
+
 .msg--user { align-items: flex-end; }
 .msg--bot { align-items: flex-start; }
+
 .bubble {
   max-width: 76%;
   box-sizing: border-box;
-  padding: 20rpx 24rpx;
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  line-height: 1.6;
+  padding: 20rpx $sp-md;
+  border-radius: $radius-md;
+  font-size: $fs-body;
+  line-height: 1.65;
   white-space: pre-line;
   word-break: normal;
   overflow-wrap: break-word;
 }
-.msg--user .bubble { background: $brand-red; color: #fff; border-top-right-radius: 4rpx; }
-.msg--bot .bubble { background: #fff; color: $text-main; border-top-left-radius: 4rpx; }
 
-.confirm {
-  width: 82%;
-  background: #fff;
+.msg--user .bubble {
+  background: $c-primary;
+  color: #fff;
+  border-bottom-right-radius: 6rpx;
+  box-shadow: 0 6rpx 16rpx rgba(185, 70, 47, 0.18);
+}
+
+.msg--bot .bubble {
+  background: $card-bg;
+  color: $text-main;
   border: 1rpx solid $border-color;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-top: 12rpx;
+  border-bottom-left-radius: 6rpx;
+}
+
+/* ---------- 待确认卡片 ---------- */
+.confirm {
   display: flex;
   flex-direction: column;
-  &__title { font-size: 30rpx; font-weight: 700; }
-  &__summary { font-size: 26rpx; color: $text-sub; margin-top: 12rpx; line-height: 1.5; }
-  &__btns { display: flex; justify-content: flex-end; margin-top: 20rpx; }
+  width: 84%;
+  margin-top: 12rpx;
+  padding: $sp-md;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-left: 6rpx solid $c-gold;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+
+  &__title {
+    font-size: $fs-body;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  &__summary {
+    margin-top: 12rpx;
+    font-size: $fs-small;
+    color: $text-sub;
+    line-height: 1.6;
+  }
+
+  &__btns {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $sp-md;
+  }
+
   &__btn {
+    margin-left: $sp-sm;
     padding: 12rpx 34rpx;
-    border-radius: 32rpx;
-    font-size: 26rpx;
-    margin-left: 16rpx;
-    &--cancel { color: $text-sub; border: 1rpx solid $border-color; }
-    &--ok { background: $brand-red; color: #fff; }
+    border-radius: $radius-pill;
+    font-size: $fs-caption;
+
+    &--cancel {
+      color: $text-sub;
+      border: 1rpx solid $border-color;
+    }
+
+    &--ok {
+      background: $c-primary;
+      color: #fff;
+      font-weight: 600;
+    }
   }
 }
 
+/* ---------- 输入栏 ---------- */
 .inputbar {
   display: flex;
   align-items: center;
-  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  padding: 16rpx $sp-md calc(16rpx + env(safe-area-inset-bottom));
+  background: $card-bg;
+  border-top: 1rpx solid $border-color;
+
   &__input {
     flex: 1;
-    background: $bg-color;
-    border-radius: 36rpx;
+    margin-right: $sp-sm;
     padding: 16rpx 30rpx;
-    font-size: 28rpx;
-    margin-right: 16rpx;
+    background: $surface-2;
+    border-radius: $radius-pill;
+    font-size: $fs-body;
+    color: $text-main;
   }
+
   &__btn {
-    background: $brand-red;
+    background: $c-primary;
     color: #fff;
-    border-radius: 36rpx;
+    border-radius: $radius-pill;
     padding: 16rpx 34rpx;
-    font-size: 28rpx;
+    font-size: $fs-body;
+    font-weight: 600;
   }
 }
 </style>

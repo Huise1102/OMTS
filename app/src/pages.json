@@ -50,16 +50,16 @@
     }
   ],
   "globalStyle": {
-    "navigationBarTextStyle": "white",
+    "navigationBarTextStyle": "black",
     "navigationBarTitleText": "星辉影城",
-    "navigationBarBackgroundColor": "#C8102E",
-    "backgroundColor": "#F5F6FA"
+    "navigationBarBackgroundColor": "#FAF7F2",
+    "backgroundColor": "#FAF7F2"
   },
   "tabBar": {
-    "color": "#8A8A8A",
-    "selectedColor": "#C8102E",
+    "color": "#8A7B70",
+    "selectedColor": "#B9462F",
     "backgroundColor": "#FFFFFF",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       { "pagePath": "pages/index/index", "text": "首页" },
       { "pagePath": "pages/movie/list", "text": "影片" },

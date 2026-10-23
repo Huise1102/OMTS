@@ -24,6 +24,7 @@
       </view>
       <text class="order__meta">{{ o.cinema_name }} · {{ o.hall_name }}</text>
       <text class="order__meta">{{ o.show_date }} {{ fmtTime(o.show_time) }}（{{ o.ticket_qty }}张）</text>
+      <view class="order__cut"></view>
       <view class="order__bottom">
         <text class="order__amount">¥{{ fmtPrice(o.total_amount) }}</text>
         <view class="order__actions">
@@ -128,7 +129,7 @@ function onClear() {
     title: '清除历史订单',
     content: '将删除「已完成 / 已退票 / 已取消」的订单，删除后不可恢复。待支付与已支付订单会保留。',
     confirmText: '清除',
-    confirmColor: '#c62f2f',
+    confirmColor: '#B9462F',
     success: (res) => {
       if (!res.confirm) return
       clearOrders().then(d => {
@@ -141,56 +142,137 @@ function onClear() {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 40rpx; }
+.page { padding-bottom: 48rpx; }
 
+/* ---------- 状态筛选 ---------- */
 .tabs {
   white-space: nowrap;
-  background: #fff;
-  padding: 16rpx 24rpx;
+  padding: $sp-md $sp-md 0;
 }
+
 .tab {
   display: inline-block;
-  padding: 12rpx 28rpx;
-  margin-right: 12rpx;
-  font-size: 26rpx;
+  padding: 10rpx 26rpx;
+  margin-right: $sp-xs;
+  font-size: $fs-caption;
   color: $text-sub;
-  border-radius: 30rpx;
-  &.active { background: $brand-red; color: #fff; }
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-pill;
+
+  &.active {
+    background: $c-primary;
+    border-color: $c-primary;
+    color: #fff;
+    font-weight: 600;
+  }
 }
 
 .toolbar {
   display: flex;
   justify-content: flex-end;
-  padding: 4rpx 24rpx 0;
+  padding: 4rpx $sp-md 0;
 }
+
 .toolbar__btn {
-  font-size: 24rpx;
-  color: $text-sub;
+  font-size: $fs-caption;
+  color: $text-light;
   padding: 10rpx 0;
+
   &:active { opacity: 0.6; }
 }
 
+/* ---------- 订单卡片（票根） ---------- */
 .order {
-  background: #fff;
-  border-radius: 16rpx;
-  margin: 20rpx 24rpx 0;
-  padding: 24rpx;
-  &__top { display: flex; justify-content: space-between; align-items: center; }
-  &__movie { font-size: 30rpx; font-weight: 600; }
-  &__status { font-size: 26rpx; }
-  &__meta { display: block; font-size: 24rpx; color: $text-sub; margin-top: 8rpx; }
-  &__bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 16rpx; }
-  &__amount { color: $price-color; font-size: 34rpx; font-weight: 700; }
+  position: relative;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-lg;
+  margin: $sp-md $sp-md 0;
+  padding: $sp-md;
+  box-shadow: $shadow-card;
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__movie {
+    font-size: $fs-title;
+    font-weight: 700;
+    color: $text-main;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__status {
+    flex-shrink: 0;
+    margin-left: $sp-sm;
+    font-size: $fs-caption;
+    font-weight: 600;
+  }
+
+  &__meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
+  /* 票根撕线：虚线 + 两侧半圆缺口 */
+  &__cut {
+    position: relative;
+    height: 0;
+    margin: $sp-md -#{$sp-md};
+    border-top: 2rpx dashed $border-color;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: -14rpx;
+      width: 28rpx;
+      height: 28rpx;
+      border-radius: 50%;
+      background: $bg-color;
+    }
+
+    &::before { left: -14rpx; }
+    &::after { right: -14rpx; }
+  }
+
+  &__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__amount {
+    color: $price-color;
+    font-size: 36rpx;
+    font-weight: 700;
+  }
+
   &__actions { display: flex; }
 }
-.act {
-  padding: 10rpx 30rpx;
-  border-radius: 30rpx;
-  font-size: 24rpx;
-  margin-left: 16rpx;
-  &--primary { background: $brand-red; color: #fff; }
-  &--plain { color: $brand-red; border: 1rpx solid $brand-red; }
-}
 
-.empty { text-align: center; color: $text-sub; padding: 80rpx 0; }
+.act {
+  padding: 10rpx 28rpx;
+  border-radius: $radius-pill;
+  font-size: $fs-caption;
+  margin-left: $sp-sm;
+
+  &--primary {
+    background: $c-primary;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  &--plain {
+    color: $c-primary;
+    border: 1rpx solid $c-primary;
+  }
+}
 </style>

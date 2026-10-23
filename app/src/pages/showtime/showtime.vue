@@ -2,7 +2,7 @@
   <view class="page">
     <!-- 影片头部 -->
     <view class="head">
-      <movie-poster :title="movie ? movie.title : ''" :sub="movie ? movie.version : ''" :width="100" :height="140" />
+      <movie-poster :title="movie ? movie.title : ''" :sub="movie ? movie.version : ''" :width="130" :height="182" />
       <view class="head__info">
         <text class="head__title">{{ movie ? movie.title : '选择场次' }}</text>
         <text class="head__sub" v-if="movie">{{ movie.version }} · {{ movie.duration }}分钟 · {{ fmtRating(movie.rating) }}分</text>
@@ -88,7 +88,13 @@ function loadShowtimes(autoAdvance = false) {
   if (!movieId.value) return
   getShowtimeList({ movieId: movieId.value, date: curDate.value })
     .then(d => {
-      const list = d || []
+      let list = d || []
+      // 今天已开场的场次不再展示（模拟真实售票）
+      if (curDate.value === dates[0].date) {
+        const now = new Date()
+        const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+        list = list.filter(s => s.show_time.slice(0, 5) > hhmm)
+      }
       // 当前日期无场次时，自动向后寻找最近有场次的日期（仅首次进入时）
       if (autoAdvance && !list.length) {
         const idx = dates.findIndex(x => x.date === curDate.value)
@@ -116,60 +122,155 @@ function select(s) {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 40rpx; }
+.page { padding-bottom: 48rpx; }
 
+/* ---------- 影片头部 ---------- */
 .head {
   display: flex;
   align-items: center;
-  padding: 24rpx;
-  background: #fff;
-  margin-bottom: 20rpx;
-  &__info { flex: 1; margin-left: 24rpx; }
-  &__title { font-size: 34rpx; font-weight: 700; }
-  &__sub { display: block; font-size: 24rpx; color: $text-sub; margin-top: 10rpx; }
-}
+  padding: $sp-md;
+  background: linear-gradient(160deg, #F6EDE2 0%, #FAF7F2 100%);
 
-.dates { white-space: nowrap; padding: 0 24rpx 20rpx; }
-.date {
-  display: inline-block;
-  width: 120rpx;
-  text-align: center;
-  background: #fff;
-  border-radius: 12rpx;
-  padding: 16rpx 0;
-  margin-right: 16rpx;
-  &__label { display: block; font-size: 26rpx; color: $text-main; }
-  &__week { display: block; font-size: 22rpx; color: $text-sub; margin-top: 4rpx; }
-  &.active {
-    background: $brand-red;
-    .date__label, .date__week { color: #fff; }
+  &__info {
+    flex: 1;
+    margin-left: $sp-md;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $fs-title;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  &__sub {
+    display: block;
+    margin-top: 10rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
   }
 }
 
-.cinema { margin: 0 24rpx 20rpx; }
-.cinema__name { font-size: 26rpx; color: $text-sub; padding: 8rpx 0; }
+/* ---------- 日期选择 ---------- */
+.dates {
+  white-space: nowrap;
+  padding: $sp-sm $sp-md $sp-md;
+}
+
+.date {
+  display: inline-block;
+  width: 118rpx;
+  text-align: center;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-md;
+  padding: 16rpx 0;
+  margin-right: $sp-sm;
+
+  &__label {
+    display: block;
+    font-size: $fs-small;
+    color: $text-main;
+  }
+
+  &__week {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    color: $text-light;
+  }
+
+  &.active {
+    background: $c-primary;
+    border-color: $c-primary;
+
+    .date__label { color: #fff; font-weight: 600; }
+    .date__week { color: rgba(255, 255, 255, 0.8); }
+  }
+}
+
+/* ---------- 影院分组 ---------- */
+.cinema { margin: 0 $sp-md $sp-md; }
+
+.cinema__name {
+  display: flex;
+  align-items: center;
+  font-size: $fs-small;
+  color: $text-sub;
+  padding: $sp-xs 0 $sp-xs;
+
+  &::before {
+    content: '';
+    width: 6rpx;
+    height: 24rpx;
+    margin-right: 12rpx;
+    border-radius: 6rpx;
+    background: $c-gold;
+  }
+}
+
+/* ---------- 场次卡片 ---------- */
 .showtime {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: 12rpx;
-  padding: 24rpx;
-  margin-top: 12rpx;
-  &__main { flex: 1; display: flex; flex-direction: column; }
-  &__time { font-size: 34rpx; font-weight: 700; }
-  &__hall { font-size: 24rpx; color: $text-sub; margin-top: 6rpx; }
-  &__price { display: flex; flex-direction: column; align-items: flex-end; margin-right: 24rpx; }
-  &__price-num { color: $price-color; font-size: 32rpx; font-weight: 700; }
-  &__remain { font-size: 22rpx; color: $text-sub; margin-top: 4rpx; }
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-md;
+  padding: $sp-md;
+  margin-top: $sp-sm;
+  box-shadow: $shadow-card;
+
+  &__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__time {
+    font-size: 38rpx;
+    font-weight: 700;
+    color: $text-main;
+    letter-spacing: 1rpx;
+  }
+
+  &__hall {
+    margin-top: 6rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
+  &__price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: $sp-md;
+  }
+
+  &__price-num {
+    color: $price-color;
+    font-size: $fs-title;
+    font-weight: 700;
+  }
+
+  &__remain {
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    color: $text-light;
+  }
+
   &__btn {
-    background: $brand-red;
+    background: $c-primary;
     color: #fff;
-    border-radius: 32rpx;
-    padding: 12rpx 30rpx;
-    font-size: 26rpx;
-    &.disabled { background: #ccc; }
+    border-radius: $radius-pill;
+    padding: 14rpx 30rpx;
+    font-size: $fs-caption;
+    font-weight: 600;
+
+    &.disabled {
+      background: $surface-2;
+      color: $text-light;
+    }
   }
 }
-
-.empty { text-align: center; color: $text-sub; padding: 80rpx 0; }
 </style>

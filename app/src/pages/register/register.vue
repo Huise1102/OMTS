@@ -1,7 +1,9 @@
 <template>
   <view class="page">
     <view class="brand">
+      <text class="brand__eyebrow">JOIN STARLIGHT</text>
       <text class="brand__title">注册账号</text>
+      <view class="brand__line"></view>
       <text class="brand__sub">加入星辉影城，开启观影之旅</text>
     </view>
 
@@ -69,26 +71,101 @@ function goLogin() {
 </script>
 
 <style scoped lang="scss">
-.page { padding: 60rpx 48rpx; }
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 80rpx $sp-lg 60rpx;
+  background: linear-gradient(170deg, #F6EDE2 0%, $bg-color 40%);
+}
 
-.brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 60rpx; }
-.brand__title { font-size: 48rpx; font-weight: 700; color: $brand-red; }
-.brand__sub { font-size: 24rpx; color: $text-sub; margin-top: 12rpx; }
+/* ---------- 品牌区 ---------- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 52rpx;
 
-.form { background: #fff; border-radius: 20rpx; padding: 40rpx 32rpx; }
-.field { display: flex; align-items: center; border-bottom: 1rpx solid $border-color; padding: 24rpx 0; }
-.field__label { width: 140rpx; font-size: 28rpx; color: $text-main; }
-.field__input { flex: 1; font-size: 28rpx; }
+  &__eyebrow {
+    font-size: 20rpx;
+    letter-spacing: 8rpx;
+    color: $c-gold;
+    font-weight: 600;
+  }
+
+  &__title {
+    margin-top: 16rpx;
+    font-size: $fs-hero - 4rpx;
+    font-weight: 700;
+    letter-spacing: 4rpx;
+    color: $text-main;
+  }
+
+  &__line {
+    width: 56rpx;
+    height: 4rpx;
+    margin: 20rpx 0 16rpx;
+    border-radius: 4rpx;
+    background: $c-gold;
+  }
+
+  &__sub {
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+}
+
+/* ---------- 表单卡片 ---------- */
+.form {
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-float;
+  padding: $sp-lg;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  margin-bottom: $sp-sm + 4rpx;
+  padding: 0 $sp-md;
+  height: 92rpx;
+  background: $surface-2;
+  border-radius: $radius-md;
+
+  &__label {
+    flex-shrink: 0;
+    width: 140rpx;
+    font-size: $fs-small;
+    color: $text-sub;
+  }
+
+  &__input {
+    flex: 1;
+    font-size: $fs-body;
+    color: $text-main;
+  }
+}
 
 .submit {
-  background: $brand-red;
-  color: #fff;
+  margin-top: $sp-lg;
+  padding: 26rpx 0;
   text-align: center;
-  border-radius: 44rpx;
-  padding: 24rpx 0;
-  font-size: 32rpx;
-  margin-top: 48rpx;
+  font-size: $fs-title;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+  color: #fff;
+  background: $c-primary;
+  border-radius: $radius-pill;
+  box-shadow: 0 12rpx 26rpx rgba(185, 70, 47, 0.24);
 }
-.links { margin-top: 28rpx; text-align: center; }
-.link { color: $link-color; font-size: 26rpx; }
+
+.links {
+  margin-top: $sp-md;
+  text-align: center;
+}
+
+.link {
+  font-size: $fs-caption;
+  color: $link-color;
+}
 </style>

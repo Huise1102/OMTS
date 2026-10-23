@@ -100,40 +100,122 @@ function toggle(i) {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 40rpx; }
+.page { padding-bottom: 48rpx; }
 
-.card__title { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; }
+.card__title {
+  display: flex;
+  align-items: center;
+  font-size: $fs-title;
+  font-weight: 700;
+  margin-bottom: $sp-md;
 
-.step { display: flex; margin-bottom: 20rpx; }
+  &::before {
+    content: '';
+    width: 6rpx;
+    height: 28rpx;
+    margin-right: 14rpx;
+    border-radius: 6rpx;
+    background: $c-gold;
+  }
+}
+
+/* ---------- 流程步骤 ---------- */
+.step {
+  display: flex;
+  margin-bottom: $sp-md;
+
+  &:last-child { margin-bottom: 0; }
+}
+
 .step__index {
+  flex-shrink: 0;
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: $brand-red;
-  color: #fff;
+  background: $c-primary-soft;
+  color: $c-primary;
   text-align: center;
   line-height: 44rpx;
-  font-size: 26rpx;
-  flex-shrink: 0;
+  font-size: $fs-caption;
+  font-weight: 700;
 }
-.step__body { flex: 1; margin-left: 20rpx; }
-.step__title { display: block; font-size: 28rpx; font-weight: 600; }
-.step__desc { display: block; font-size: 24rpx; color: $text-sub; margin-top: 4rpx; }
 
-.note { display: flex; margin-bottom: 14rpx; }
+.step__body {
+  flex: 1;
+  margin-left: $sp-sm;
+}
+
+.step__title {
+  display: block;
+  font-size: $fs-body;
+  font-weight: 600;
+  color: $text-main;
+}
+
+.step__desc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: $fs-caption;
+  color: $text-sub;
+  line-height: 1.6;
+}
+
+/* ---------- 列表条目 ---------- */
+.note {
+  display: flex;
+  margin-bottom: 14rpx;
+
+  &:last-child { margin-bottom: 0; }
+}
+
 .note__dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: $brand-gold;
-  margin: 12rpx 16rpx 0 0;
   flex-shrink: 0;
+  width: 10rpx;
+  height: 10rpx;
+  margin: 14rpx 16rpx 0 0;
+  border-radius: 50%;
+  background: $c-gold;
 }
-.note__text { font-size: 26rpx; line-height: 1.6; flex: 1; }
 
-.faq { border-bottom: 1rpx solid $border-color; padding: 16rpx 0; }
-.faq__head { display: flex; justify-content: space-between; align-items: center; }
-.faq__q { font-size: 28rpx; flex: 1; }
-.faq__arrow { font-size: 24rpx; color: $link-color; }
-.faq__a { display: block; font-size: 24rpx; color: $text-sub; margin-top: 12rpx; line-height: 1.6; }
+.note__text {
+  flex: 1;
+  font-size: $fs-small;
+  color: $text-main;
+  line-height: 1.7;
+}
+
+/* ---------- FAQ ---------- */
+.faq {
+  padding: 18rpx 0;
+  border-bottom: 1rpx dashed $border-color;
+
+  &:last-child { border-bottom: none; }
+}
+
+.faq__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq__q {
+  flex: 1;
+  font-size: $fs-body;
+  color: $text-main;
+}
+
+.faq__arrow {
+  flex-shrink: 0;
+  margin-left: $sp-sm;
+  font-size: $fs-caption;
+  color: $c-gold;
+}
+
+.faq__a {
+  display: block;
+  margin-top: 12rpx;
+  font-size: $fs-caption;
+  color: $text-sub;
+  line-height: 1.7;
+}
 </style>

@@ -148,103 +148,197 @@ function submit() {
 </script>
 
 <style scoped lang="scss">
-.page { padding-bottom: 200rpx; }
+.page { padding-bottom: 210rpx; }
 
+/* ---------- 场次信息 ---------- */
 .head {
-  background: #fff;
-  padding: 24rpx;
+  background: linear-gradient(160deg, #F6EDE2 0%, #FAF7F2 100%);
+  padding: $sp-md;
   display: flex;
   flex-direction: column;
-  &__title { font-size: 32rpx; font-weight: 700; }
-  &__sub { font-size: 24rpx; color: $text-sub; margin-top: 8rpx; }
+
+  &__title {
+    font-size: $fs-title;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  &__sub {
+    margin-top: 8rpx;
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
 }
 
+/* ---------- 银幕 ---------- */
 .screen {
   display: flex;
   justify-content: center;
-  padding: 30rpx 0 10rpx;
+  padding: 32rpx 0 12rpx;
+
   &__bar {
-    width: 60%;
-    height: 40rpx;
-    background: linear-gradient(#e8e8e8, #f5f5f5);
-    border-radius: 0 0 40rpx 40rpx;
+    width: 62%;
+    height: 42rpx;
+    background: linear-gradient(180deg, #E8DDD0, #F5EFE7);
+    border-radius: 0 0 42rpx 42rpx;
+    border-bottom: 3rpx solid $c-gold;
     text-align: center;
-    line-height: 40rpx;
+    line-height: 42rpx;
     font-size: 20rpx;
-    color: #999;
+    color: $text-sub;
     letter-spacing: 8rpx;
   }
 }
 
-.seat-map { padding: 20rpx 24rpx; overflow-x: auto; }
+/* ---------- 座位图 ---------- */
+.seat-map {
+  padding: $sp-sm $sp-md;
+  overflow-x: auto;
+}
+
 .seat-row {
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12rpx;
 }
+
 .seat-row__label {
   width: 44rpx;
   text-align: center;
-  font-size: 22rpx;
-  color: $text-sub;
+  font-size: 20rpx;
+  color: $text-light;
   flex-shrink: 0;
 }
-.seat-cell { display: flex; align-items: center; justify-content: center; }
+
+.seat-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .seat {
   width: 44rpx;
   height: 44rpx;
   margin: 4rpx;
-  border-radius: 8rpx;
+  border-radius: 10rpx 10rpx 14rpx 14rpx;
   box-sizing: border-box;
-  &--avail { background: #fff; border: 1rpx solid #d0d3d8; }
-  &--sold { background: #e5e7eb; border: 1rpx solid #e5e7eb; }
-  &--selected { background: $brand-red; border: 1rpx solid $brand-red; }
-  &--couple { background: #FFD6E0; border: 1rpx solid #FF8FB0; }
-  &--disabled { background: #f0f0f0; border: 1rpx dashed #ccc; }
+
+  &--avail {
+    background: $card-bg;
+    border: 2rpx solid #DCCFBE;
+  }
+
+  &--sold {
+    background: $surface-2;
+    border: 2rpx solid #E4D8C9;
+  }
+
+  &--selected {
+    background: $c-primary;
+    border: 2rpx solid $c-primary;
+    box-shadow: 0 4rpx 10rpx rgba(185, 70, 47, 0.28);
+  }
+
+  &--couple {
+    background: $c-gold-soft;
+    border: 2rpx solid $c-gold;
+  }
+
+  &--disabled {
+    background: transparent;
+    border: 2rpx dashed #D8CCBD;
+  }
 }
+
 .seat-space {
   width: 44rpx;
   height: 44rpx;
   margin: 4rpx;
 }
 
+/* ---------- 图例 ---------- */
 .legend {
   display: flex;
   justify-content: center;
-  padding: 20rpx 0;
-  &__item { display: flex; align-items: center; margin: 0 20rpx; font-size: 22rpx; color: $text-sub; }
+  flex-wrap: wrap;
+  padding: $sp-sm 0;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    margin: 6rpx $sp-sm;
+    font-size: 20rpx;
+    color: $text-sub;
+  }
 }
+
 .dot {
   width: 24rpx;
   height: 24rpx;
-  border-radius: 6rpx;
+  border-radius: 6rpx 6rpx 8rpx 8rpx;
   margin-right: 8rpx;
-  &--avail { background: #fff; border: 1rpx solid #d0d3d8; }
-  &--sold { background: #e5e7eb; }
-  &--select { background: $brand-red; }
-  &--couple { background: #FFD6E0; border: 1rpx solid #FF8FB0; }
+
+  &--avail { background: $card-bg; border: 2rpx solid #DCCFBE; }
+  &--sold { background: $surface-2; border: 2rpx solid #E4D8C9; }
+  &--select { background: $c-primary; }
+  &--couple { background: $c-gold-soft; border: 2rpx solid $c-gold; }
 }
 
+/* ---------- 底部结算 ---------- */
 .footer {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  background: #fff;
-  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  &__info { display: flex; flex-direction: column; }
-  &__count { font-size: 24rpx; color: $text-sub; }
-  &__total { font-size: 26rpx; }
-  &__amount { color: $price-color; font-size: 36rpx; font-weight: 700; }
+  padding: 20rpx $sp-md calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1rpx solid $border-color;
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding-right: $sp-sm;
+  }
+
+  &__count {
+    font-size: 20rpx;
+    color: $text-sub;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__total {
+    margin-top: 4rpx;
+    font-size: $fs-small;
+    color: $text-sub;
+  }
+
+  &__amount {
+    color: $price-color;
+    font-size: 38rpx;
+    font-weight: 700;
+  }
+
   &__btn {
-    background: $brand-red;
+    flex-shrink: 0;
+    background: $c-primary;
     color: #fff;
-    border-radius: 44rpx;
-    padding: 20rpx 56rpx;
-    font-size: 30rpx;
-    &.disabled { background: #ccc; }
+    border-radius: $radius-pill;
+    padding: 22rpx 52rpx;
+    font-size: $fs-body;
+    font-weight: 600;
+
+    &.disabled {
+      background: $surface-2;
+      color: $text-light;
+    }
   }
 }
 </style>

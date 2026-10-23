@@ -199,7 +199,23 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 }]
 ```
 
-### 5.2 座位图
+### 5.2 场次详情
+
+`GET /detail/:id`
+
+用于选座页在刷新或直达时获取票价与影片信息（不依赖列表页中转的数据）。
+
+```json
+{
+  "id": 19, "movie_id": 29, "cinema_id": 1, "hall_id": 4,
+  "show_date": "2026-10-23", "show_time": "14:00:00", "version": "3D",
+  "price": "58.00", "origin_price": "78.00",
+  "total_seat": 36, "sold_seat": 6, "status": 1,
+  "hall_name": "4号亲子厅", "cinema_name": "星辉影城（中心城店）", "movie_title": "千与千寻"
+}
+```
+
+### 5.3 座位图
 
 `GET /seat/:showtimeId`
 

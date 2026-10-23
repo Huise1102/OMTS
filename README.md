@@ -76,6 +76,7 @@
 │   ├── middleware/             # auth（JWT）、errorHandler
 │   ├── routes/                 # auth / movie / showtime / order / chat
 │   ├── agent/                  # tools（工具定义）、agent（调用编排）、confirm（待确认动作）
+│   ├── jobs/occupySeats.js     # 定时占座（模拟真实售票）
 │   └── utils/response.js
 ├── database/
 │   ├── init.sql                # 建库建表 + 影院/影厅/座位 + 演示用户
@@ -173,6 +174,13 @@ npm start                   # http://localhost:3000
 | `QWEN_API_KEY` | 通义千问 API Key（不配置时助手会返回友好提示） |
 | `QWEN_MODEL` | 默认 `qwen-plus` |
 
+启动时会自动执行一次「定时占座」（为未来场次补充已售座位），之后每天 02:00 自动执行。
+需要手动触发时：
+
+```bash
+npm run occupy
+```
+
 ### 4. 启动前端（H5）
 
 ```bash
@@ -257,6 +265,11 @@ npm run build:mp-weixin     # 产物：app/dist/build/mp-weixin
 - **取票二维码**：`qrcode-generator` 生成矩阵后用 view 网格渲染，规避 canvas 在 H5 双端的绘制时机问题。
 - **场次排期无冲突**：7 厅 × 7 天 × 7 时段生成组合，同一影厅同一时段只排一部影片，
   同一「日期 + 时段」内各影厅影片互不相同。
+- **模拟真实售票**（`server/jobs/occupySeats.js`）：每天 02:00 为未来场次随机占用座位，
+  让座位图出现「已售」灰块，贴近真实购票场景。占用以系统账号 `system_booking` 真实下单
+  （订单状态 = 已完成），因此座位图、余票数、下单冲突校验全部走原有链路，无需特殊分支。
+  细节：每场按 10%–45% 的起售率随机占用、优先选同排连座、每场至少留 4 个空位、
+  随机种子由场次 ID + 日期决定（重复执行不会重复占座）、执行后校正 `sold_seat` 计数。
 
 ---
 

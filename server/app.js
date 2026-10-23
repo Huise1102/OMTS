@@ -33,4 +33,9 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`后端服务已启动: http://localhost:${PORT}`);
+
+  // 模拟真实售票：启动时先补一次，之后每天 02:00 自动执行
+  const { run, scheduleDaily } = require('./jobs/occupySeats');
+  run().catch(e => console.error('[占座任务] 首次执行失败:', e.message));
+  scheduleDaily();
 });

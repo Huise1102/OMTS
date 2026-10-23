@@ -1,3 +1,8 @@
+<script>
+// 应用根组件：仅承载全局样式，无业务逻辑
+export default {}
+</script>
+
 <style lang="scss">
 /* 全局基础样式 */
 page {

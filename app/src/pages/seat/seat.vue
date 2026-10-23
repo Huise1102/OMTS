@@ -45,7 +45,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getSeatMap } from '../../api/showtime'
+import { getSeatMap, getShowtimeDetail } from '../../api/showtime'
 import { createOrder } from '../../api/order'
 import { useBookingStore } from '../../store/booking'
 import { useUserStore } from '../../store/user'
@@ -57,11 +57,16 @@ const user = useUserStore()
 const showtimeId = ref('')
 const hall = ref(null)
 const seats = ref([])
+const detail = ref(null) // 场次详情，刷新或直达时也能拿到票价与影片信息
 const selected = ref([]) // [{ id, seat_row, seat_col, seat_type }]
 
-const movieTitle = computed(() => (booking.movie ? booking.movie.title : ''))
+const showtime = computed(() => detail.value || booking.showtime)
+const movieTitle = computed(() => {
+  if (detail.value) return detail.value.movie_title
+  return booking.movie ? booking.movie.title : ''
+})
 const showInfo = computed(() => {
-  const s = booking.showtime
+  const s = showtime.value
   return s ? `${s.show_date} ${fmtTime(s.show_time)} · ${s.hall_name} · ${s.version}` : ''
 })
 
@@ -83,7 +88,7 @@ const rows = computed(() => {
 })
 
 const totalPrice = computed(() => {
-  const p = booking.showtime ? Number(booking.showtime.price) : 0
+  const p = showtime.value ? Number(showtime.value.price) : 0
   return (p * selected.value.length).toFixed(2)
 })
 
@@ -98,6 +103,7 @@ const selectedLabel = computed(() => {
 onLoad((options) => {
   showtimeId.value = options && options.showtimeId
   if (!showtimeId.value) return uni.showToast({ title: '参数错误', icon: 'none' })
+  getShowtimeDetail(showtimeId.value).then(d => { detail.value = d }).catch(() => {})
   getSeatMap(showtimeId.value).then(d => {
     hall.value = d.hall
     seats.value = d.seats || []

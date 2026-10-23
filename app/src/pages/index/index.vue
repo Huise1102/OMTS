@@ -3,7 +3,6 @@
     <!-- 品牌头部 -->
     <view class="topbar">
       <view class="topbar__brand">
-        <text class="topbar__title">星辉影城</text>
         <text class="topbar__slogan">光影之间，遇见好故事</text>
       </view>
       <view class="topbar__chat" @tap="goChat">
@@ -141,8 +140,7 @@ function onBanner(b) {
   padding: 24rpx;
   background: $brand-red;
   &__brand { display: flex; flex-direction: column; }
-  &__title { color: #fff; font-size: 40rpx; font-weight: 700; }
-  &__slogan { color: rgba(255,255,255,0.85); font-size: 22rpx; margin-top: 4rpx; }
+  &__slogan { color: #fff; font-size: 30rpx; font-weight: 600; }
   &__chat {
     color: #fff;
     border: 1rpx solid rgba(255,255,255,0.7);

@@ -2,7 +2,7 @@
   <view class="page" v-if="order">
     <!-- 状态卡片 -->
     <view class="status-card">
-      <text class="status-card__text" :style="{ color: orderStatusColor(order.status) }">{{ orderStatus(order.status) }}</text>
+      <text class="status-card__text">{{ orderStatus(order.status) }}</text>
       <text class="status-card__no">订单号：{{ order.order_no }}</text>
     </view>
 
@@ -52,7 +52,7 @@ import { ref, computed, nextTick } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { getOrderDetail, payOrder, cancelOrder, refundOrder } from '../../api/order'
-import { orderStatus, orderStatusColor, fmtTime, fmtPrice } from '../../utils/index'
+import { orderStatus, fmtTime, fmtPrice } from '../../utils/index'
 
 const order = ref(null)
 const orderId = ref('')

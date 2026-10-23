@@ -23,6 +23,23 @@ router.get('/list', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// 场次详情（供选座页在刷新或直达时获取票价与影片信息）
+router.get('/detail/:id', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT s.*, h.name AS hall_name, c.name AS cinema_name, m.title AS movie_title
+       FROM showtime s
+       JOIN hall h ON h.id = s.hall_id
+       JOIN cinema c ON c.id = s.cinema_id
+       JOIN movie m ON m.id = s.movie_id
+       WHERE s.id = ?`,
+      [req.params.id]
+    );
+    if (!rows.length) return ok(res, null, '场次不存在');
+    ok(res, rows[0]);
+  } catch (e) { next(e); }
+});
+
 // 座位图：返回影厅信息 + 座位列表（含 sold 已售标记）
 router.get('/seat/:showtimeId', async (req, res, next) => {
   try {

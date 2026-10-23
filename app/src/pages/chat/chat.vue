@@ -213,12 +213,14 @@ function confirmAction(i) {
 .msg--bot { align-items: flex-start; }
 .bubble {
   max-width: 76%;
+  box-sizing: border-box;
   padding: 20rpx 24rpx;
   border-radius: 16rpx;
   font-size: 28rpx;
   line-height: 1.6;
   white-space: pre-line;
-  word-break: break-all;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .msg--user .bubble { background: $brand-red; color: #fff; border-top-right-radius: 4rpx; }
 .msg--bot .bubble { background: #fff; color: $text-main; border-top-left-radius: 4rpx; }

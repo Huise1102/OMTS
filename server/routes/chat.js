@@ -40,4 +40,26 @@ router.get('/history/:sessionId', auth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// 清空当前用户全部历史会话（会话 + 消息）
+router.delete('/session', auth, async (req, res, next) => {
+  const conn = await pool.getConnection();
+  try {
+    const [rows] = await conn.query('SELECT session_id FROM chat_session WHERE user_id=?', [req.user.id]);
+    const ids = rows.map(r => r.session_id);
+
+    await conn.beginTransaction();
+    if (ids.length) {
+      await conn.query('DELETE FROM chat_message WHERE session_id IN (?)', [ids]);
+      await conn.query('DELETE FROM chat_session WHERE user_id=?', [req.user.id]);
+    }
+    await conn.commit();
+    ok(res, { count: ids.length });
+  } catch (e) {
+    await conn.rollback();
+    next(e);
+  } finally {
+    conn.release();
+  }
+});
+
 module.exports = router;

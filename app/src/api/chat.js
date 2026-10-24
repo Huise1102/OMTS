@@ -8,3 +8,6 @@ export const getSessions = () => request({ url: '/chat/session' })
 
 // 会话历史
 export const getHistory = (sessionId) => request({ url: `/chat/history/${sessionId}` })
+
+// 清空全部历史会话
+export const clearSessions = () => request({ url: '/chat/session', method: 'DELETE' })

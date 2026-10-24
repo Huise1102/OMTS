@@ -385,7 +385,15 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
  { "role": "assistant", "content": "近期热门影片有……" }]
 ```
 
-### 7.4 助手可调用的工具（Function Calling）
+### 7.4 清空历史会话
+
+`DELETE /session` → 删除当前用户的全部会话及聊天记录（事务内执行）
+
+```json
+{ "code": 0, "message": "success", "data": { "count": 11 } }
+```
+
+### 7.5 助手可调用的工具（Function Calling）
 
 定义见 [tools.js](../server/agent/tools.js)，模型在 3 轮以内完成「补参数 → 执行 → 回复」：
 

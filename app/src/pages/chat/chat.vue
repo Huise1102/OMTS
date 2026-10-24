@@ -3,6 +3,7 @@
     <view class="toolbar">
       <view class="toolbar__btn" @tap="toggleSessions">历史会话</view>
       <view class="toolbar__btn" @tap="newSession">新会话</view>
+      <view class="toolbar__btn toolbar__btn--ghost" @tap="onClearSessions">清空历史</view>
     </view>
 
     <scroll-view v-if="showSessions" scroll-y class="sessions">
@@ -57,7 +58,7 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { sendChat, getSessions, getHistory } from '../../api/chat'
+import { sendChat, getSessions, getHistory, clearSessions } from '../../api/chat'
 import { createOrder, refundOrder } from '../../api/order'
 import { useUserStore } from '../../store/user'
 
@@ -105,6 +106,24 @@ function newSession() {
   showSessions.value = false
   messages.value = [{ role: 'assistant', content: GREETING }]
   scrollBottom()
+}
+
+// 清空全部历史会话（同时重置当前对话）
+function onClearSessions() {
+  uni.showModal({
+    title: '清空历史会话',
+    content: '将删除全部历史会话与聊天记录，删除后不可恢复。当前对话也会重置。',
+    confirmText: '清空',
+    confirmColor: '#B9462F',
+    success: (res) => {
+      if (!res.confirm) return
+      clearSessions().then(d => {
+        sessions.value = []
+        newSession()
+        uni.showToast({ title: `已清除 ${(d && d.count) || 0} 个会话`, icon: 'none' })
+      }).catch(() => {})
+    }
+  })
 }
 
 function scrollBottom() {
@@ -196,6 +215,11 @@ function confirmAction(i) {
   color: $c-primary;
   border: 1rpx solid $c-primary;
   border-radius: $radius-pill;
+
+  &--ghost {
+    color: $text-sub;
+    border-color: $border-color;
+  }
 }
 
 /* ---------- 历史会话 ---------- */

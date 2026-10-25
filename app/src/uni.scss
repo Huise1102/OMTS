@@ -1,0 +1,84 @@
+/* ============================================================
+   主题变量（胶片暖棕 · Film Warm）
+   说明：uni.scss 会被自动注入到每个页面的 scss 中，这里只放变量与 mixin，
+        不要写具体样式规则，否则会被重复编译进每个页面。
+   配色逻辑：米纸底 + 赤陶红主色 + 琥珀金点缀，用细边框代替重阴影，
+               整体像一张电影票根，复古但不老旧。
+   ============================================================ */
+
+/* ---------- 品牌色 ---------- */
+$c-primary:        #B9462F;   // 赤陶红：主按钮、价格、选中态
+$c-primary-dark:   #9B3522;   // 按压态 / 深色强调
+$c-primary-soft:   #F6E6E0;   // 主色浅底（标签、高亮区块）
+$c-gold:           #E0A44A;   // 琥珀金：评分、会员、次级强调
+$c-gold-soft:      #FBF1DD;   // 金色浅底
+
+/* ---------- 中性色 ---------- */
+$bg-color:         #FAF7F2;   // 页面背景（暖白纸感）
+$card-bg:          #FFFFFF;   // 卡片
+$surface-2:        #F2ECE3;   // 次级面（信息块、输入框底）
+$text-main:        #2B211C;   // 主文字（暖黑）
+$text-sub:         #8A7B70;   // 次要文字
+$text-light:       #B5A99E;   // 弱化文字 / 占位符
+$border-color:     #EAE0D2;   // 细边框（替代阴影分割）
+
+/* ---------- 功能色 ---------- */
+$price-color:      #B9462F;   // 价格
+$success-color:    #4E8A62;   // 成功 / 已完成
+$warning-color:    #C8871F;   // 待支付 / 提醒
+$link-color:       #8C6B3E;   // 链接 / 信息
+
+/* ---------- 圆角 ---------- */
+$radius-sm:        12rpx;
+$radius-md:        20rpx;
+$radius-lg:        28rpx;
+$radius-pill:      999rpx;
+
+/* ---------- 阴影（极轻，主要靠边框分层） ---------- */
+$shadow-card:      0 6rpx 18rpx rgba(43, 33, 28, 0.06);
+$shadow-float:     0 12rpx 32rpx rgba(43, 33, 28, 0.12);
+
+/* ---------- 兼容别名（旧变量名保留，避免历史样式编译失败） ---------- */
+$brand-red:        $c-primary;
+$brand-gold:       $c-gold;
+$brand-dark:       $text-main;
+
+/* ---------- 间距刻度（4 的倍数，单位 rpx） ---------- */
+$sp-xs: 8rpx;
+$sp-sm: 16rpx;
+$sp-md: 24rpx;
+$sp-lg: 32rpx;
+$sp-xl: 48rpx;
+
+/* ---------- 字号 ---------- */
+$fs-caption: 22rpx;
+$fs-small:   24rpx;
+$fs-body:    28rpx;
+$fs-title:   32rpx;
+$fs-large:   40rpx;
+$fs-hero:    52rpx;
+
+/* ---------- 常用 mixin ---------- */
+@mixin card-base {
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+}
+
+@mixin ellipsis($lines: 1) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @if $lines == 1 {
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+  }
+}
+
+/* 虚线分割（票根撕线效果） */
+@mixin dashed-line($color: $border-color) {
+  border-top: 1rpx dashed $color;
+}

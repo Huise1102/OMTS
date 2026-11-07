@@ -53,11 +53,12 @@ router.get('/seat/:showtimeId', async (req, res, next) => {
       'SELECT * FROM seat WHERE hall_id = ? ORDER BY seat_row, seat_col',
       [hallId]
     );
-    // 查询该场次已售座位（有效票且订单为已支付/已完成）
+    // 查询该场次已售座位：已支付/已完成，或待支付且未超时（锁座）
     const [sold] = await pool.query(
       `SELECT DISTINCT oi.seat_id FROM order_item oi
        JOIN orders o ON o.id = oi.order_id
-       WHERE oi.showtime_id = ? AND oi.status = 1 AND o.status IN (1,2)`,
+       WHERE oi.showtime_id = ? AND oi.status = 1
+         AND (o.status IN (1,2) OR (o.status = 0 AND o.expire_at > NOW()))`,
       [showtimeId]
     );
     const soldSet = new Set(sold.map(s => s.seat_id));

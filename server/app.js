@@ -38,4 +38,9 @@ app.listen(PORT, () => {
   const { run, scheduleDaily } = require('./jobs/occupySeats');
   run().catch(e => console.error('[占座任务] 首次执行失败:', e.message));
   scheduleDaily();
+
+  // 待支付订单超时取消：启动时先执行一次，之后每 5 分钟检查
+  const expiredOrders = require('./jobs/cancelExpiredOrders');
+  expiredOrders.run().catch(e => console.error('[超时取消] 首次执行失败:', e.message));
+  expiredOrders.schedule();
 });

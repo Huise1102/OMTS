@@ -23,8 +23,34 @@
       </view>
     </scroll-view>
 
+    <!-- 影院筛选 -->
+    <scroll-view v-if="!loading && cinemas.length > 1" scroll-x class="cinema-filter" :show-scrollbar="false">
+      <view class="chip cinema-filter__item" :class="{ active: curCinema === '' }" @tap="curCinema = ''">全部影院</view>
+      <view
+        v-for="c in cinemas"
+        :key="c"
+        class="chip cinema-filter__item"
+        :class="{ active: curCinema === c }"
+        @tap="curCinema = c"
+      >{{ c }}</view>
+    </scroll-view>
+
     <!-- 按影院分组的场次 -->
-    <view v-for="(group, name) in grouped" :key="name" class="cinema">
+    <view v-if="loading" class="cinema">
+      <view class="cinema__name cinema__name--skeleton"><skeleton-block width="180rpx" height="26rpx" /></view>
+      <view v-for="i in 3" :key="i" class="showtime">
+        <view class="showtime__main">
+          <skeleton-block width="120rpx" height="40rpx" />
+          <view class="showtime__skeleton-line"><skeleton-block width="60%" height="24rpx" /></view>
+        </view>
+        <view class="showtime__price">
+          <skeleton-block width="100rpx" height="34rpx" />
+          <view class="showtime__skeleton-line"><skeleton-block width="80rpx" height="20rpx" /></view>
+        </view>
+        <skeleton-block width="112rpx" height="56rpx" :radius="28" />
+      </view>
+    </view>
+    <view v-else v-for="(group, name) in grouped" :key="name" class="cinema">
       <view class="cinema__name">{{ name }}</view>
       <view v-for="s in group" :key="s.id" class="showtime">
         <view class="showtime__main">
@@ -32,6 +58,7 @@
           <text class="showtime__hall">{{ s.hall_name }} · {{ s.version }}</text>
         </view>
         <view class="showtime__price">
+          <text v-if="Number(s.origin_price) > Number(s.price)" class="showtime__origin">¥{{ fmtPrice(s.origin_price) }}</text>
           <text class="showtime__price-num">¥{{ fmtPrice(s.price) }}</text>
           <text class="showtime__remain">余 {{ s.total_seat - s.sold_seat }} 座</text>
         </view>
@@ -43,13 +70,17 @@
       </view>
     </view>
 
-    <view v-if="loaded && !showtimes.length" class="empty">该日期暂无场次</view>
+    <empty-state
+      v-if="loaded && !filtered.length"
+      title="该日期暂无场次"
+      desc="换个日期或影院看看"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getMovieDetail } from '../../api/movie'
 import { getShowtimeList } from '../../api/showtime'
 import { useBookingStore } from '../../store/booking'
@@ -63,10 +94,25 @@ const dates = nextDates(7)
 const curDate = ref(dates[0].date)
 const showtimes = ref([])
 const loaded = ref(false)
+const loading = ref(true)
+const curCinema = ref('')
+
+const cinemas = computed(() => {
+  const set = []
+  ;(showtimes.value || []).forEach(s => {
+    if (s.cinema_name && !set.includes(s.cinema_name)) set.push(s.cinema_name)
+  })
+  return set
+})
+
+const filtered = computed(() => {
+  if (!curCinema.value) return showtimes.value || []
+  return (showtimes.value || []).filter(s => s.cinema_name === curCinema.value)
+})
 
 const grouped = computed(() => {
   const map = {}
-  ;(showtimes.value || []).forEach(s => {
+  ;(filtered.value || []).forEach(s => {
     const key = s.cinema_name || '未知影院'
     ;(map[key] = map[key] || []).push(s)
   })
@@ -85,8 +131,9 @@ onLoad((options) => {
 })
 
 function loadShowtimes(autoAdvance = false) {
-  if (!movieId.value) return
-  getShowtimeList({ movieId: movieId.value, date: curDate.value })
+  if (!movieId.value) return Promise.resolve()
+  loading.value = true
+  return getShowtimeList({ movieId: movieId.value, date: curDate.value })
     .then(d => {
       let list = d || []
       // 今天已开场的场次不再展示（模拟真实售票）
@@ -104,15 +151,22 @@ function loadShowtimes(autoAdvance = false) {
         }
       }
       showtimes.value = list
-      loaded.value = true
     })
-    .catch(() => { loaded.value = true })
+    .catch(() => {}).finally(() => {
+      loaded.value = true
+      loading.value = false
+    })
 }
 
 function switchDate(date) {
   curDate.value = date
+  curCinema.value = ''
   loadShowtimes(false)
 }
+
+onPullDownRefresh(() => {
+  loadShowtimes(false).finally(() => uni.stopPullDownRefresh())
+})
 
 function select(s) {
   if (s.sold_seat >= s.total_seat) return
@@ -189,6 +243,16 @@ function select(s) {
   }
 }
 
+/* ---------- 影院筛选 ---------- */
+.cinema-filter {
+  white-space: nowrap;
+  padding: 0 $sp-md;
+
+  &__item {
+    margin-right: $sp-sm;
+  }
+}
+
 /* ---------- 影院分组 ---------- */
 .cinema { margin: 0 $sp-md $sp-md; }
 
@@ -253,10 +317,20 @@ function select(s) {
     font-weight: 700;
   }
 
+  &__origin {
+    font-size: 20rpx;
+    color: $text-light;
+    text-decoration: line-through;
+  }
+
   &__remain {
     margin-top: 4rpx;
     font-size: 20rpx;
     color: $text-light;
+  }
+
+  &__skeleton-line {
+    margin-top: 10rpx;
   }
 
   &__btn {

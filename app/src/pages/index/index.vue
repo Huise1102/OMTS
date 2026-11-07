@@ -17,14 +17,30 @@
         placeholder="搜索影片 / 导演 / 主演"
         placeholder-class="search__ph"
         confirm-type="search"
+        @focus="searchFocus = true"
+        @blur="onSearchBlur"
         @confirm="goSearch"
       />
       <view class="search__btn" @tap="goSearch">搜索</view>
     </view>
 
+    <!-- 搜索历史 -->
+    <view v-if="searchFocus && history.length" class="history">
+      <view class="history__head">
+        <text class="history__label">最近搜索</text>
+        <text class="history__clear" @tap="clearHistory">清空</text>
+      </view>
+      <view class="history__tags">
+        <text v-for="h in history" :key="h" class="chip history__tag" @tap="pickHistory(h)">{{ h }}</text>
+      </view>
+    </view>
+
     <!-- 轮播 Banner -->
+    <view v-if="loading" class="banner-skeleton">
+      <skeleton-block width="100%" height="300rpx" :radius="28" />
+    </view>
     <swiper
-      v-if="banners.length"
+      v-else-if="banners.length"
       class="banner"
       circular
       autoplay
@@ -49,7 +65,10 @@
       <view class="section-head">
         <text class="section-head__title">影片类型</text>
       </view>
-      <scroll-view scroll-x class="cats" :show-scrollbar="false">
+      <view v-if="loading" class="cats cats--skeleton">
+        <skeleton-block v-for="i in 5" :key="i" width="112rpx" height="56rpx" :radius="28" />
+      </view>
+      <scroll-view v-else scroll-x class="cats" :show-scrollbar="false">
         <view v-for="c in categories" :key="c.id" class="chip cat" @tap="goCategory(c)">{{ c.name }}</view>
       </scroll-view>
     </view>
@@ -60,7 +79,18 @@
         <text class="section-head__title">热映推荐</text>
         <text class="section-head__more" @tap="goList">查看全部</text>
       </view>
-      <view class="grid">
+      <view v-if="loading" class="grid">
+        <view v-for="i in 4" :key="i" class="movie">
+          <skeleton-block width="100%" height="480rpx" :radius="20" />
+          <view class="movie__skeleton-line">
+            <skeleton-block width="60%" height="30rpx" />
+          </view>
+          <view class="movie__skeleton-line">
+            <skeleton-block width="40%" height="24rpx" />
+          </view>
+        </view>
+      </view>
+      <view v-else class="grid">
         <view v-for="m in hot" :key="m.id" class="movie" @tap="goDetail(m)">
           <movie-poster :title="m.title" :sub="m.version" width="100%" height="480rpx" />
           <text class="movie__title">{{ m.title }}</text>
@@ -70,6 +100,31 @@
           </view>
         </view>
       </view>
+      <empty-state
+        v-if="!loading && !hot.length"
+        title="暂无热映影片"
+        desc="稍后再来看看，或去影片页发现更多"
+        action-text="去影片页"
+        @action="goList"
+      />
+    </view>
+
+    <!-- 即将上映 -->
+    <view v-if="loading || upcoming.length" class="section">
+      <view class="section-head">
+        <text class="section-head__title">即将上映</text>
+        <text class="section-head__more" @tap="goAll">查看全部</text>
+      </view>
+      <view v-if="loading" class="coming coming--skeleton">
+        <skeleton-block v-for="i in 3" :key="i" width="200rpx" height="280rpx" :radius="20" />
+      </view>
+      <scroll-view v-else scroll-x class="coming" :show-scrollbar="false">
+        <view v-for="m in upcoming" :key="m.id" class="coming__item" @tap="goDetail(m)">
+          <movie-poster :title="m.title" :sub="m.version" :width="200" :height="280" />
+          <text class="coming__title">{{ m.title }}</text>
+          <text class="coming__date">{{ m.release_date }}</text>
+        </view>
+      </scroll-view>
     </view>
 
     <!-- 快捷入口 -->
@@ -88,8 +143,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import { getBanner, getCategory, getHot } from '../../api/movie'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { getBanner, getCategory, getHot, getMovieList } from '../../api/movie'
 import { fmtRating } from '../../utils/index'
 import { useFilterStore } from '../../store/filter'
 
@@ -98,7 +153,12 @@ const filter = useFilterStore()
 const banners = ref([])
 const categories = ref([])
 const hot = ref([])
+const upcoming = ref([])
 const searchKw = ref('')
+const loading = ref(true)
+const searchFocus = ref(false)
+const history = ref([])
+const HISTORY_KEY = 'search_history'
 
 const bannerPalettes = [
   'linear-gradient(135deg, #A8402B, #5E1E14)',
@@ -109,21 +169,67 @@ const bannerPalettes = [
 const bannerBg = (i) => bannerPalettes[i % bannerPalettes.length]
 
 function loadData() {
-  getBanner().then(d => { banners.value = d || [] }).catch(() => {})
-  getCategory().then(d => { categories.value = d || [] }).catch(() => {})
-  getHot().then(d => { hot.value = d || [] }).catch(() => {})
+  loading.value = true
+  const p1 = getBanner().then(d => { banners.value = d || [] }).catch(() => {})
+  const p2 = getCategory().then(d => { categories.value = d || [] }).catch(() => {})
+  const p3 = getHot().then(d => { hot.value = d || [] }).catch(() => {})
+  const p4 = getMovieList({ status: 2, pageSize: 6 })
+    .then(d => { upcoming.value = d || [] }).catch(() => {})
+  // 并行请求，全部结束后统一收起骨架，避免首屏串行等待
+  return Promise.all([p1, p2, p3, p4]).finally(() => { loading.value = false })
 }
 
-onLoad(() => { loadData() })
+function loadHistory() {
+  try {
+    const v = uni.getStorageSync(HISTORY_KEY)
+    history.value = Array.isArray(v) ? v : []
+  } catch (e) { history.value = [] }
+}
+
+function saveHistory(kw) {
+  const next = [kw, ...history.value.filter(x => x !== kw)].slice(0, 8)
+  history.value = next
+  uni.setStorageSync(HISTORY_KEY, next)
+}
+
+function clearHistory() {
+  history.value = []
+  uni.removeStorageSync(HISTORY_KEY)
+}
+
+function pickHistory(kw) {
+  searchKw.value = kw
+  goSearch()
+}
+
+function onSearchBlur() {
+  // 延迟收起，避免点击历史标签前就失焦
+  setTimeout(() => { searchFocus.value = false }, 150)
+}
+
+onLoad(() => {
+  loadHistory()
+  loadData()
+})
+
+onPullDownRefresh(() => {
+  loadData().finally(() => uni.stopPullDownRefresh())
+})
 
 function goList() { filter.goAll() }
 function goDetail(m) { uni.navigateTo({ url: `/pages/movie/detail?id=${m.id}` }) }
 function goCategory(c) { filter.goType(c.id) }
 function goSearch() {
   const kw = searchKw.value.trim()
-  if (kw) filter.goSearch(kw)
-  else filter.goAll()
+  if (kw) {
+    saveHistory(kw)
+    searchFocus.value = false
+    filter.goSearch(kw)
+  } else {
+    filter.goAll()
+  }
 }
+function goAll() { filter.goAll() }
 function goGuide() { uni.navigateTo({ url: '/pages/guide/guide' }) }
 function goChat() { uni.navigateTo({ url: '/pages/chat/chat' }) }
 function onBanner(b) {
@@ -207,7 +313,49 @@ function onBanner(b) {
   }
 }
 
+/* ---------- 搜索历史 ---------- */
+.history {
+  margin: $sp-sm $sp-md 0;
+  padding: $sp-sm;
+  background: $card-bg;
+  border: 1rpx solid $border-color;
+  border-radius: $radius-md;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $sp-xs;
+  }
+
+  &__label {
+    font-size: $fs-caption;
+    color: $text-sub;
+  }
+
+  &__clear {
+    font-size: $fs-caption;
+    color: $text-light;
+    padding: 4rpx;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs;
+  }
+
+  &__tag {
+    font-size: $fs-caption;
+    padding: 8rpx 20rpx;
+  }
+}
+
 /* ---------- 轮播 ---------- */
+.banner-skeleton {
+  margin: $sp-md;
+}
+
 .banner {
   height: 300rpx;
   margin: $sp-md;
@@ -259,6 +407,11 @@ function onBanner(b) {
 .cats {
   white-space: nowrap;
   padding: 0 $sp-md;
+
+  &--skeleton {
+    display: flex;
+    gap: $sp-sm;
+  }
 }
 
 .cat { margin-right: $sp-sm; }
@@ -312,6 +465,47 @@ function onBanner(b) {
     background: $c-primary-soft;
     border-radius: $radius-sm;
     padding: 2rpx 12rpx;
+  }
+
+  &__skeleton-line {
+    margin-top: 14rpx;
+  }
+}
+
+/* ---------- 即将上映 ---------- */
+.coming {
+  white-space: nowrap;
+  padding: 0 $sp-md;
+
+  &--skeleton {
+    display: flex;
+    gap: $sp-sm;
+  }
+
+  &__item {
+    display: inline-block;
+    width: 200rpx;
+    margin-right: $sp-sm;
+    vertical-align: top;
+    white-space: normal;
+  }
+
+  &__title {
+    display: block;
+    margin-top: 10rpx;
+    font-size: $fs-small;
+    font-weight: 600;
+    color: $text-main;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__date {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    color: $text-light;
   }
 }
 

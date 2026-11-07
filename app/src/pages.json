@@ -2,19 +2,23 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "星辉影城" }
+      "style": { "navigationBarTitleText": "星辉影城", "enablePullDownRefresh": true }
     },
     {
       "path": "pages/movie/list",
-      "style": { "navigationBarTitleText": "影片" }
+      "style": { "navigationBarTitleText": "影片", "enablePullDownRefresh": true }
     },
     {
       "path": "pages/movie/detail",
       "style": { "navigationBarTitleText": "影片详情" }
     },
     {
+      "path": "pages/movie/favorite",
+      "style": { "navigationBarTitleText": "我的收藏" }
+    },
+    {
       "path": "pages/showtime/showtime",
-      "style": { "navigationBarTitleText": "选择场次" }
+      "style": { "navigationBarTitleText": "选择场次", "enablePullDownRefresh": true }
     },
     {
       "path": "pages/seat/seat",
@@ -22,7 +26,7 @@
     },
     {
       "path": "pages/order/list",
-      "style": { "navigationBarTitleText": "我的订单" }
+      "style": { "navigationBarTitleText": "我的订单", "enablePullDownRefresh": true }
     },
     {
       "path": "pages/order/detail",

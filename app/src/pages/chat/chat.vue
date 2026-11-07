@@ -39,6 +39,19 @@
           </view>
         </view>
       </view>
+      <!-- 正在输入 -->
+      <view v-if="sending" id="typing" class="msg msg--bot">
+        <view class="bubble typing">
+          <view class="typing__dot"></view>
+          <view class="typing__dot typing__dot--2"></view>
+          <view class="typing__dot typing__dot--3"></view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 快捷问题 -->
+    <scroll-view v-if="!sending" scroll-x class="quick" :show-scrollbar="false">
+      <view v-for="q in quickPrompts" :key="q" class="chip quick__item" @tap="quickSend(q)">{{ q }}</view>
     </scroll-view>
 
     <view class="inputbar">
@@ -65,6 +78,13 @@ import { useUserStore } from '../../store/user'
 const user = useUserStore()
 
 const GREETING = '您好，我是星辉影城的智能购票助手。您可以问我「最近有什么好看的电影」「帮我订一张票」或「帮我退票」。'
+
+const quickPrompts = [
+  '最近有什么好看的电影',
+  '帮我订一张今晚的票',
+  '帮我查一下我的订单',
+  '帮我退票'
+]
 
 const messages = ref([])
 const input = ref('')
@@ -130,12 +150,24 @@ function scrollBottom() {
   nextTick(() => { scrollId.value = 'm' + (messages.value.length - 1) })
 }
 
+// 发送后滚动到"正在输入"气泡
+function scrollTyping() {
+  nextTick(() => { scrollId.value = 'typing' })
+}
+
+function quickSend(q) {
+  if (sending.value) return
+  input.value = q
+  send()
+}
+
 async function send() {
   const text = input.value.trim()
   if (!text || sending.value) return
   input.value = ''
   messages.value.push({ role: 'user', content: text })
   sending.value = true
+  scrollTyping()
   try {
     const d = await sendChat({ message: text, sessionId: sessionId.value || undefined })
     sessionId.value = d.sessionId
@@ -352,6 +384,42 @@ function confirmAction(i) {
       color: #fff;
       font-weight: 600;
     }
+  }
+}
+
+/* ---------- 正在输入 ---------- */
+.typing {
+  display: flex;
+  align-items: center;
+
+  .typing__dot {
+    width: 12rpx;
+    height: 12rpx;
+    margin: 0 5rpx;
+    border-radius: 50%;
+    background: $text-light;
+    animation: typing-blink 1.2s ease-in-out infinite;
+  }
+
+  .typing__dot--2 { animation-delay: 0.2s; }
+  .typing__dot--3 { animation-delay: 0.4s; }
+}
+
+@keyframes typing-blink {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* ---------- 快捷问题 ---------- */
+.quick {
+  white-space: nowrap;
+  padding: 12rpx $sp-md 0;
+  background: $bg-color;
+
+  &__item {
+    margin-right: $sp-xs;
+    font-size: $fs-caption;
+    padding: 10rpx 24rpx;
   }
 }
 

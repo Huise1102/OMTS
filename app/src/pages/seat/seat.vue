@@ -11,6 +11,12 @@
       <view class="screen__bar">银幕</view>
     </view>
 
+    <!-- 连座推荐 -->
+    <view v-if="hall" class="quick">
+      <text class="quick__tip">优先推荐居中连座</text>
+      <view class="quick__btn" @tap="recommend">帮我选座</view>
+    </view>
+
     <!-- 座位图 -->
     <view class="seat-map" v-if="hall">
       <view v-for="r in rows" :key="r.row" class="seat-row">
@@ -37,7 +43,9 @@
         <text class="footer__count">已选 {{ selected.length }} 座 · {{ selectedLabel }}</text>
         <text class="footer__total">合计 <text class="footer__amount">¥{{ totalPrice }}</text></text>
       </view>
-      <view class="footer__btn" :class="{ disabled: !selected.length }" @tap="submit">确认选座</view>
+      <view class="footer__btn" :class="{ disabled: !selected.length || submitting }" @tap="submit">
+        {{ submitting ? '提交中…' : '确认选座' }}
+      </view>
     </view>
   </view>
 </template>
@@ -59,6 +67,7 @@ const hall = ref(null)
 const seats = ref([])
 const detail = ref(null) // 场次详情，刷新或直达时也能拿到票价与影片信息
 const selected = ref([]) // [{ id, seat_row, seat_col, seat_type }]
+const submitting = ref(false)
 
 const showtime = computed(() => detail.value || booking.showtime)
 const movieTitle = computed(() => {
@@ -131,11 +140,56 @@ function toggle(s) {
   }
 }
 
+// 连座推荐：在所有空闲座位中寻找 2 个相邻、尽量居中的座位
+function recommend() {
+  if (!hall.value) return
+  const COUNT = 2
+  const centerCol = (hall.value.cols + 1) / 2
+  const centerRow = hall.value.rows * 0.65
+  let best = null
+  let bestScore = Infinity
+
+  const consider = (run) => {
+    if (run.length < COUNT) return
+    // 在连续区间内取最靠近中轴线的 COUNT 个座位
+    for (let i = 0; i <= run.length - COUNT; i++) {
+      const window = run.slice(i, i + COUNT)
+      const avgCol = window.reduce((sum, s) => sum + s.seat_col, 0) / COUNT
+      const score = Math.abs(avgCol - centerCol) + Math.abs(window[0].seat_row - centerRow) * 1.5
+      if (score < bestScore) {
+        bestScore = score
+        best = window
+      }
+    }
+  }
+
+  for (let r = 1; r <= hall.value.rows; r++) {
+    let run = []
+    for (let c = 1; c <= hall.value.cols; c++) {
+      const s = seats.value.find(x => x.seat_row === r && x.seat_col === c)
+      if (s && s.status !== 0 && !s.sold) {
+        run.push(s)
+      } else {
+        consider(run)
+        run = []
+      }
+    }
+    consider(run)
+  }
+
+  if (!best) {
+    return uni.showToast({ title: '暂无可推荐的相邻座位', icon: 'none' })
+  }
+  selected.value = best.slice()
+  uni.showToast({ title: '已为你推荐相邻座位', icon: 'none' })
+}
+
 function submit() {
-  if (!selected.value.length) return
+  if (!selected.value.length || submitting.value) return
   if (!user.isLogin) {
     return setTimeout(() => uni.navigateTo({ url: '/pages/login/login' }), 300)
   }
+  submitting.value = true
   const seatIds = selected.value.map(s => s.id)
   createOrder({ showtimeId: showtimeId.value, seatIds }).then(d => {
     uni.showToast({ title: '下单成功，请支付', icon: 'none' })
@@ -143,7 +197,9 @@ function submit() {
     setTimeout(() => {
       uni.redirectTo({ url: `/pages/order/detail?id=${d.orderId}` })
     }, 500)
-  }).catch(() => {})
+  }).catch(() => {
+    submitting.value = false
+  })
 }
 </script>
 
@@ -187,6 +243,31 @@ function submit() {
     font-size: 20rpx;
     color: $text-sub;
     letter-spacing: 8rpx;
+  }
+}
+
+/* ---------- 连座推荐 ---------- */
+.quick {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 $sp-md;
+
+  &__tip {
+    font-size: 20rpx;
+    color: $text-light;
+    margin-right: $sp-xs;
+  }
+
+  &__btn {
+    background: $surface-2;
+    color: $text-main;
+    border-radius: $radius-pill;
+    padding: 10rpx 28rpx;
+    font-size: $fs-caption;
+    border: 1rpx solid $border-color;
+
+    &:active { opacity: 0.7; }
   }
 }
 

@@ -32,6 +32,11 @@
 
     <!-- 底部购票 -->
     <view class="footer">
+      <view
+        class="footer__fav"
+        :class="{ 'footer__fav--on': favorited }"
+        @tap="toggleFavorite"
+      >{{ favorited ? '已想看' : '想看' }}</view>
       <view class="footer__btn" @tap="goBuy">
         {{ movie.status === 1 ? '立即购票' : '预售选座' }}
       </view>
@@ -42,18 +47,44 @@
 <script setup>
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getMovieDetail } from '../../api/movie'
+import { getMovieDetail, getFavoriteStatus, addFavorite, removeFavorite } from '../../api/movie'
 import { useBookingStore } from '../../store/booking'
+import { useUserStore } from '../../store/user'
 import { fmtRating } from '../../utils/index'
 
 const booking = useBookingStore()
+const user = useUserStore()
 const movie = ref(null)
+const favorited = ref(false)
+const faving = ref(false)
 
 onLoad((options) => {
   const id = options && options.id
   if (!id) return uni.showToast({ title: '参数错误', icon: 'none' })
-  getMovieDetail(id).then(d => { movie.value = d }).catch(() => {})
+  getMovieDetail(id).then(d => {
+    movie.value = d
+    // 收藏状态不阻塞详情加载，登录后才查询
+    if (user.isLogin && d) {
+      getFavoriteStatus(d.id).then(r => { favorited.value = !!r.favorited }).catch(() => {})
+    }
+  }).catch(() => {})
 })
+
+function toggleFavorite() {
+  if (!user.isLogin) {
+    return uni.navigateTo({ url: '/pages/login/login' })
+  }
+  if (!movie.value || faving.value) return
+  const next = !favorited.value
+  favorited.value = next // 乐观更新
+  faving.value = true
+  const req = next ? addFavorite(movie.value.id) : removeFavorite(movie.value.id)
+  req.then(() => {
+    uni.showToast({ title: next ? '已加入想看' : '已取消想看', icon: 'none' })
+  }).catch(() => {
+    favorited.value = !next // 失败回滚
+  }).finally(() => { faving.value = false })
+}
 
 function goBuy() {
   if (!movie.value) return
@@ -181,11 +212,36 @@ function goBuy() {
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  align-items: center;
   padding: 20rpx $sp-md calc(20rpx + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.96);
   border-top: 1rpx solid $border-color;
 
+  &__fav {
+    flex-shrink: 0;
+    width: 150rpx;
+    height: 88rpx;
+    line-height: 84rpx;
+    text-align: center;
+    border-radius: $radius-pill;
+    font-size: $fs-small;
+    color: $text-sub;
+    background: transparent;
+    border: 1rpx solid $border-color;
+    box-sizing: border-box;
+
+    &--on {
+      color: $c-primary;
+      background: $c-primary-soft;
+      border-color: $c-primary;
+      font-weight: 600;
+    }
+  }
+
   &__btn {
+    flex: 1;
+    margin-left: $sp-sm;
     background: $c-primary;
     color: #fff;
     text-align: center;

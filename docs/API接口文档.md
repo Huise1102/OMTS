@@ -34,7 +34,7 @@
 
 | 值 | 含义 | 可执行操作 |
 | --- | --- | --- |
-| `0` | 待支付 | 支付、取消 |
+| `0` | 待支付 | 支付、取消（15 分钟支付窗口，超时自动取消） |
 | `1` | 已支付 | 退票 |
 | `2` | 已完成 | 退票 |
 | `3` | 已退票 | — |
@@ -155,14 +155,16 @@
 | --- | --- | --- | --- |
 | `status` | number | 否 | `1` 热映 / `2` 即将上映 |
 | `typeId` | number | 否 | 影片类型 ID |
-| `keyword` | string | 否 | 片名模糊匹配 |
+| `keyword` | string | 否 | 关键词，同时匹配片名 / 导演 / 主演（最长 20 字） |
 | `sort` | string | 否 | `rating` 评分优先 / `release` 上映时间优先；缺省按热门+评分 |
+| `page` | number | 否 | 页码，从 1 开始，仅配合 `pageSize` 生效 |
+| `pageSize` | number | 否 | 每页数量；不传时返回全部影片（保持历史行为） |
 
 ```
-GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
+GET /api/movie/list?status=1&typeId=1&keyword=宫崎骏&sort=rating&page=1&pageSize=10
 ```
 
-返回影片数组，字段同 4.4。
+返回影片数组，字段同 4.4。分页时前端以「本页返回数量 == pageSize」判断是否还有下一页。
 
 ### 4.6 影片详情
 
@@ -175,6 +177,42 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 ```
 
 > 影片不存在时返回 `{ "code": 0, "message": "影片不存在", "data": null }`。
+
+### 4.7 收藏（想看）🔒
+
+复用 `favorite(user_id, movie_id)` 表，唯一键保证同一影片不会重复收藏。
+
+#### GET `/favorite/list`
+
+当前用户的收藏列表，按收藏时间倒序：
+
+```json
+[{
+  "id": 3, "movieId": 29, "created_at": "2026-11-07 10:20:00",
+  "title": "千与千寻", "rating": "9.4", "version": "2D",
+  "status": 1, "release_date": "2019-06-21"
+}]
+```
+
+#### GET `/favorite/status/:movieId`
+
+```json
+{ "code": 0, "message": "success", "data": { "favorited": true } }
+```
+
+#### POST `/favorite/:movieId`
+
+幂等收藏（`INSERT IGNORE`），重复调用不会产生重复记录：
+
+```json
+{ "code": 0, "message": "已加入想看", "data": { "favorited": true } }
+```
+
+#### DELETE `/favorite/:movieId`
+
+```json
+{ "code": 0, "message": "已取消想看", "data": { "favorited": false } }
+```
 
 ---
 
@@ -231,7 +269,7 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 | 字段 | 说明 |
 | --- | --- |
 | `status` | 座位自身状态：`1` 可用 / `0` 禁用 |
-| `sold` | 该场次是否已售（订单 `status IN (1,2)` 且明细 `status = 1`） |
+| `sold` | 该场次是否已售：订单为已支付/已完成，或待支付且未超过 15 分钟支付窗口（锁座） |
 
 > 前端渲染状态：`sold` 优先显示已售，其次 `status = 0` 显示不可选。
 
@@ -248,7 +286,7 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 | `showtimeId` | number | 是 | 场次 ID |
 | `seatIds` | number[] | 是 | 座位 ID 数组，至少 1 个 |
 
-服务端在事务中 `FOR UPDATE` 锁定场次、复查座位占用，再写入订单与明细。
+服务端在事务中 `FOR UPDATE` 锁定场次、复查座位占用，再写入订单与明细。新订单自动写入 `expire_at = NOW() + 15 分钟`，作为支付窗口。
 
 ```json
 // 成功
@@ -263,9 +301,20 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 
 `POST /pay/:id` → 订单 `0 → 1`，同时累加场次 `sold_seat`
 
+支付在事务内完成：先校验支付窗口（`expire_at > NOW()`），再复查订单座位是否被其他有效订单占用。超时或座位冲突时订单自动置为已取消（`4`），明细置 `0` 释放座位。
+
 ```json
+// 成功
 { "code": 0, "message": "支付成功", "data": null }
+
+// 超时
+{ "code": 1, "message": "订单已超时取消，请重新选座", "data": null }
+
+// 座位冲突
+{ "code": 1, "message": "座位已被占用，请重新选座", "data": null }
 ```
+
+> 服务端任务 `server/jobs/cancelExpiredOrders.js` 每 5 分钟自动取消 `status = 0 AND expire_at <= NOW()` 的订单并释放座位。
 
 ### 6.3 取消订单
 
@@ -288,16 +337,19 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
 
 ### 6.6 订单列表
 
-`GET /list?status=`
+`GET /list?status=&page=&pageSize=`
 
 | 参数 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `status` | number | 否 | 订单状态；不传返回全部 |
+| `page` | number | 否 | 页码，从 1 开始，仅配合 `pageSize` 生效 |
+| `pageSize` | number | 否 | 每页数量；不传时返回全部订单（保持历史行为） |
 
 ```json
 [{
   "id": 9, "order_no": "C1761550000000A1B2C3", "total_amount": "38.00",
   "ticket_qty": 1, "status": 0, "created_at": "2026-10-23 15:20:00",
+  "paid_at": null, "expire_at": "2026-10-23 15:35:00",
   "movie_title": "千与千寻", "cinema_name": "星辉影城（中心城店）",
   "hall_name": "1号激光厅", "show_date": "2026-10-24", "show_time": "14:00:00"
 }]
@@ -314,6 +366,7 @@ GET /api/movie/list?status=1&typeId=1&keyword=霸王&sort=rating
   "id": 9, "order_no": "C1761550000000A1B2C3", "user_id": 1, "movie_id": 29,
   "total_amount": "38.00", "ticket_qty": 1, "status": 0,
   "created_at": "2026-10-23 15:20:00", "paid_at": null,
+  "expire_at": "2026-10-23 15:35:00",
   "movie_title": "千与千寻", "cinema_name": "星辉影城（中心城店）",
   "hall_name": "1号激光厅", "show_date": "2026-10-24", "show_time": "14:00:00",
   "tickets": [

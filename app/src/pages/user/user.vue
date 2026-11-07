@@ -16,6 +16,7 @@
     <!-- 功能菜单 -->
     <view class="card menu">
       <view class="menu__item" @tap="goOrder"><text>我的订单</text><text class="menu__arrow">›</text></view>
+      <view class="menu__item" @tap="go('/pages/movie/favorite')"><text>我的收藏</text><text class="menu__arrow">›</text></view>
       <view class="menu__item" @tap="go('/pages/guide/guide')"><text>观影指南</text><text class="menu__arrow">›</text></view>
       <view class="menu__item" @tap="go('/pages/chat/chat')"><text>智能购票助手</text><text class="menu__arrow">›</text></view>
     </view>

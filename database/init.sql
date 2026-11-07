@@ -152,11 +152,13 @@ CREATE TABLE `orders` (
   `status`       TINYINT       NOT NULL DEFAULT 0      COMMENT '状态：0待支付 1已支付 2已完成 3已退票 4已取消',
   `created_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下单时间',
   `paid_at`      DATETIME      DEFAULT NULL            COMMENT '支付时间',
+  `expire_at`    DATETIME      DEFAULT NULL            COMMENT '支付截止时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
   KEY `idx_user` (`user_id`),
   KEY `idx_status` (`status`),
-  KEY `idx_showtime` (`showtime_id`)
+  KEY `idx_showtime` (`showtime_id`),
+  KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
 
 -- ================= 10. 订单明细（票）表 =================

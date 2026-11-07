@@ -6,6 +6,17 @@
       <text class="status-card__no">订单号：{{ order.order_no }}</text>
     </view>
 
+    <!-- 支付倒计时 -->
+    <view v-if="order.status === 0" class="countdown">
+      <view class="countdown__row">
+        <text class="countdown__label">支付剩余 {{ countdownText }}</text>
+        <text class="countdown__tip">超时将自动取消</text>
+      </view>
+      <view class="countdown__track">
+        <view class="countdown__bar" :style="{ width: countdownWidth }"></view>
+      </view>
+    </view>
+
     <!-- 影票信息 -->
     <view class="card ticket">
       <movie-poster :title="order.movie_title" :width="130" :height="182" />
@@ -40,19 +51,21 @@
 
     <!-- 操作 -->
     <view class="footer" v-if="order.status === 0 || order.status === 1 || order.status === 2">
-      <view v-if="order.status === 0" class="footer__btn footer__btn--plain" @tap="onCancel">取消订单</view>
-      <view v-if="order.status === 0" class="footer__btn" @tap="onPay">立即支付</view>
-      <view v-if="order.status === 1 || order.status === 2" class="footer__btn footer__btn--plain" @tap="onRefund">申请退票</view>
+      <view v-if="order.status === 0" class="footer__btn footer__btn--plain" :class="{ busy: canceling }" @tap="onCancel">取消订单</view>
+      <view v-if="order.status === 0" class="footer__btn" :class="{ busy: paying }" @tap="onPay">{{ paying ? '支付中…' : '立即支付' }}</view>
+      <view v-if="order.status === 1 || order.status === 2" class="footer__btn footer__btn--plain" :class="{ busy: refunding }" @tap="onRefund">申请退票</view>
     </view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
 import qrcode from 'qrcode-generator'
 import { getOrderDetail, payOrder, cancelOrder, refundOrder } from '../../api/order'
-import { orderStatus, fmtTime, fmtPrice } from '../../utils/index'
+import { orderStatus, fmtTime, fmtPrice, parseDateTime, fmtCountdown } from '../../utils/index'
+
+const PAY_WINDOW = 15 * 60 * 1000 // 15 分钟支付窗口
 
 const order = ref(null)
 const orderId = ref('')
@@ -61,6 +74,15 @@ const qrGrid = ref(0)   // 模块网格尺寸（px）
 const qrFlat = ref([])  // 拍平的模块数组（true=深色模块）
 const QR_CELL = 5       // 每个模块像素大小，需与 .qr__cell 的 width/height 保持一致
 const QR_QUIET = 4      // 静区模块数
+
+const remainMs = ref(0)
+const paying = ref(false)
+const canceling = ref(false)
+const refunding = ref(false)
+let timer = null
+
+const countdownText = computed(() => fmtCountdown(remainMs.value))
+const countdownWidth = computed(() => `${Math.min(Math.max(remainMs.value / PAY_WINDOW, 0), 1) * 100}%`)
 
 const seatText = computed(() => {
   if (!order.value || !order.value.tickets) return ''
@@ -72,11 +94,41 @@ onLoad((options) => {
   if (orderId.value) loadDetail()
 })
 
+onShow(() => {
+  if (order.value && order.value.status === 0) startCountdown()
+})
+
+onHide(() => { clearTimer() })
+onUnload(() => { clearTimer() })
+
 function loadDetail() {
-  getOrderDetail(orderId.value).then(d => {
+  return getOrderDetail(orderId.value).then(d => {
     order.value = d
     nextTick(() => { if (d.status === 1 || d.status === 2) drawQR() })
+    if (d.status === 0) startCountdown()
+    else clearTimer()
   }).catch(() => {})
+}
+
+function startCountdown() {
+  clearTimer()
+  const end = parseDateTime(order.value && order.value.expire_at)
+  if (!end) { remainMs.value = 0; return }
+  remainMs.value = Math.max(end.getTime() - Date.now(), 0)
+  timer = setInterval(() => {
+    remainMs.value = Math.max(end.getTime() - Date.now(), 0)
+    if (remainMs.value <= 0) {
+      clearTimer()
+      loadDetail() // 超时后刷新，状态变为已取消
+    }
+  }, 1000)
+}
+
+function clearTimer() {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
 }
 
 // 用 qrcode-generator 生成真实可扫的取票码，渲染为黑白网格（H5 / 小程序通用，无 canvas 依赖）
@@ -97,37 +149,43 @@ function drawQR() {
 }
 
 function onPay() {
+  if (paying.value) return
+  paying.value = true
   payOrder(orderId.value).then(() => {
     uni.showToast({ title: '支付成功', icon: 'success' })
     loadDetail()
-  }).catch(() => {})
+  }).catch(() => {}).finally(() => { paying.value = false })
 }
 
 function onCancel() {
+  if (canceling.value) return
   uni.showModal({
     title: '提示',
     content: '确定取消该订单吗？',
     success: (res) => {
       if (res.confirm) {
+        canceling.value = true
         cancelOrder(orderId.value).then(() => {
           uni.showToast({ title: '已取消', icon: 'none' })
           loadDetail()
-        }).catch(() => {})
+        }).catch(() => {}).finally(() => { canceling.value = false })
       }
     }
   })
 }
 
 function onRefund() {
+  if (refunding.value) return
   uni.showModal({
     title: '提示',
     content: '确定退票吗？退款将原路返回。',
     success: (res) => {
       if (res.confirm) {
+        refunding.value = true
         refundOrder(orderId.value).then(() => {
           uni.showToast({ title: '退票成功', icon: 'success' })
           loadDetail()
-        }).catch(() => {})
+        }).catch(() => {}).finally(() => { refunding.value = false })
       }
     }
   })
@@ -157,6 +215,46 @@ function onRefund() {
     font-size: 20rpx;
     letter-spacing: 1rpx;
     color: $text-sub;
+  }
+}
+
+/* ---------- 支付倒计时 ---------- */
+.countdown {
+  margin: $sp-sm $sp-md 0;
+  padding: $sp-sm;
+  background: $c-gold-soft;
+  border-radius: $radius-sm;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: $fs-small;
+    color: $warning-color;
+    font-weight: 600;
+  }
+
+  &__tip {
+    font-size: $fs-caption;
+    color: $text-light;
+  }
+
+  &__track {
+    margin-top: 12rpx;
+    height: 4rpx;
+    background: $border-color;
+    border-radius: 4rpx;
+    overflow: hidden;
+  }
+
+  &__bar {
+    height: 100%;
+    background: $c-gold;
+    border-radius: 4rpx;
+    transition: width 1s linear;
   }
 }
 
@@ -304,6 +402,10 @@ function onRefund() {
       border: 1rpx solid $c-primary;
       margin-right: $sp-sm;
       font-weight: 400;
+    }
+
+    &.busy {
+      opacity: 0.55;
     }
   }
 }

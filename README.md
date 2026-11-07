@@ -381,3 +381,17 @@ A：下单时服务端会在事务内复查该场次座位占用情况，说明�
 - [API 接口文档](docs/API接口文档.md)：全部接口的参数、响应示例、错误码与联调示例
 - [运行截图](docs/运行截图.md)：页面实际运行效果
 
+---
+
+## 十四、致谢
+
+本项目的完成离不开以下开源项目与公共服务：
+
+- [uni-app](https://uniapp.dcloud.net.cn/)、[Vue 3](https://vuejs.org/)、[Vite](https://vitejs.dev/)、[Pinia](https://pinia.vuejs.org/)：跨端框架、构建工具与状态管理
+- [Express](https://expressjs.com/)、[mysql2](https://github.com/sidorares/node-mysql2)：后端服务与数据库访问
+- [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)：取票二维码生成
+- [通义千问 Qwen](https://dashscope.aliyun.com/)：智能购票助手的 Function Calling 能力
+- 影片片名、导演、主演、简介等元数据整理自公开资料，仅用于学习与技术演示，不包含任何影片文件与剧照
+
+感谢所有参与体验并给出反馈的朋友。若本项目对你有帮助，欢迎 Star 支持。
+

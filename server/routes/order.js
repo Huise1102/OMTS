@@ -20,19 +20,23 @@ router.post('/create', auth, async (req, res, next) => {
     const userId = req.user.id;
     if (!showtimeId || !seatIds || !seatIds.length) return fail(res, '请选择场次和座位');
 
-    const [show] = await conn.query('SELECT * FROM showtime WHERE id = ? FOR UPDATE', [showtimeId]);
-    if (!show.length) return fail(res, '场次不存在');
-    const st = show[0];
-
     await conn.beginTransaction();
     try {
-      // 校验所选座位是否已被占用
+      const [show] = await conn.query('SELECT * FROM showtime WHERE id = ? FOR UPDATE', [showtimeId]);
+      if (!show.length) {
+        await conn.rollback();
+        return fail(res, '场次不存在');
+      }
+      const st = show[0];
+
+      // 校验所选座位是否已被占用（待支付但未超时的订单同样锁座）
       const placeholders = seatIds.map(() => '?').join(',');
       const [occupied] = await conn.query(
         `SELECT oi.seat_id FROM order_item oi
          JOIN orders o ON o.id = oi.order_id
          WHERE oi.showtime_id = ? AND oi.seat_id IN (${placeholders})
-           AND oi.status = 1 AND o.status IN (1,2)`,
+           AND oi.status = 1
+           AND (o.status IN (1,2) OR (o.status = 0 AND o.expire_at > NOW()))`,
         [showtimeId, ...seatIds]
       );
       if (occupied.length) {
@@ -43,8 +47,9 @@ router.post('/create', auth, async (req, res, next) => {
       const total = Number(st.price) * seatIds.length;
       const orderNo = genOrderNo();
       const [orderResult] = await conn.query(
-        `INSERT INTO orders(order_no, user_id, movie_id, cinema_id, hall_id, showtime_id, total_amount, ticket_qty, status)
-         VALUES (?,?,?,?,?,?,?,?,0)`,
+        `INSERT INTO orders(order_no, user_id, movie_id, cinema_id, hall_id, showtime_id,
+                            total_amount, ticket_qty, status, expire_at)
+         VALUES (?,?,?,?,?,?,?,?,0, DATE_ADD(NOW(), INTERVAL 15 MINUTE))`,
         [orderNo, userId, st.movie_id, st.cinema_id, st.hall_id, showtimeId, total, seatIds.length]
       );
       const orderId = orderResult.insertId;
@@ -66,22 +71,65 @@ router.post('/create', auth, async (req, res, next) => {
   finally { conn.release(); }
 });
 
-// 模拟支付（状态：待支付 → 已支付，并增加已售座位数）
+// 模拟支付（待支付 → 已支付；支付前复查座位与支付窗口）
 router.post('/pay/:id', auth, async (req, res, next) => {
   const conn = await pool.getConnection();
   try {
-    const [order] = await conn.query('SELECT * FROM orders WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-    if (!order.length) return fail(res, '订单不存在');
-    const o = order[0];
-    if (o.status !== 0) return fail(res, '当前订单状态不可支付');
-
     await conn.beginTransaction();
     try {
+      const [order] = await conn.query(
+        'SELECT o.*, (o.expire_at > NOW()) AS not_expired FROM orders o WHERE o.id = ? AND o.user_id = ? FOR UPDATE',
+        [req.params.id, req.user.id]
+      );
+      if (!order.length) {
+        await conn.rollback();
+        return fail(res, '订单不存在');
+      }
+      const o = order[0];
+      if (o.status !== 0) {
+        await conn.rollback();
+        return fail(res, '当前订单状态不可支付');
+      }
+
+      // 超过支付窗口：自动取消并释放座位
+      if (!o.not_expired) {
+        await conn.query('UPDATE orders SET status = 4 WHERE id = ?', [o.id]);
+        await conn.query('UPDATE order_item SET status = 0 WHERE order_id = ?', [o.id]);
+        await conn.commit();
+        return fail(res, '订单已超时取消，请重新选座');
+      }
+
+      // 复查座位：是否已被其他有效订单占用
+      const [items] = await conn.query(
+        'SELECT seat_id FROM order_item WHERE order_id = ? AND status = 1',
+        [o.id]
+      );
+      if (items.length) {
+        const ph = items.map(() => '?').join(',');
+        const [conflict] = await conn.query(
+          `SELECT oi.seat_id FROM order_item oi
+           JOIN orders o2 ON o2.id = oi.order_id
+           WHERE oi.showtime_id = ? AND oi.seat_id IN (${ph})
+             AND oi.status = 1 AND o2.id <> ?
+             AND (o2.status IN (1,2) OR (o2.status = 0 AND o2.expire_at > NOW()))`,
+          [o.showtime_id, ...items.map(i => i.seat_id), o.id]
+        );
+        if (conflict.length) {
+          await conn.query('UPDATE orders SET status = 4 WHERE id = ?', [o.id]);
+          await conn.query('UPDATE order_item SET status = 0 WHERE order_id = ?', [o.id]);
+          await conn.commit();
+          return fail(res, '座位已被占用，请重新选座');
+        }
+      }
+
       await conn.query('UPDATE orders SET status = 1, paid_at = NOW() WHERE id = ?', [o.id]);
       await conn.query('UPDATE showtime SET sold_seat = sold_seat + ? WHERE id = ?', [o.ticket_qty, o.showtime_id]);
       await conn.commit();
       ok(res, null, '支付成功');
-    } catch (e) { await conn.rollback(); throw e; }
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    }
   } catch (e) { next(e); }
   finally { conn.release(); }
 });
@@ -141,6 +189,13 @@ router.get('/list', auth, async (req, res, next) => {
     const params = [req.user.id];
     if (status !== undefined && status !== '') { sql += ' AND o.status = ?'; params.push(status); }
     sql += ' ORDER BY o.created_at DESC';
+    // 可选分页：不传 pageSize 时保持原有返回全部订单的行为
+    const pageSize = parseInt(req.query.pageSize, 10);
+    const page = parseInt(req.query.page, 10);
+    if (pageSize > 0) {
+      const p = page > 0 ? page : 1;
+      sql += ` LIMIT ${pageSize} OFFSET ${(p - 1) * pageSize}`;
+    }
     const [rows] = await pool.query(sql, params);
     ok(res, rows);
   } catch (e) { next(e); }

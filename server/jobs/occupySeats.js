@@ -143,6 +143,14 @@ async function run() {
   const conn = await pool.getConnection();
   const startedAt = Date.now();
   try {
+    // 演示场次日期是导入当天生成的；若已整体过期，平移到今天，保证始终有未来 7 天排片
+    await conn.query(
+      `UPDATE showtime s
+       JOIN (SELECT MIN(show_date) AS mn FROM showtime) t
+       SET s.show_date = DATE_ADD(s.show_date, INTERVAL DATEDIFF(CURDATE(), t.mn) DAY)
+       WHERE t.mn < CURDATE()`
+    );
+
     const [showtimes] = await conn.query(
       `SELECT s.* FROM showtime s
        WHERE s.status = 1

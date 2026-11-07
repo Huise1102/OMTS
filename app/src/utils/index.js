@@ -17,6 +17,21 @@ export function fmtTime(t) {
   return t ? String(t).slice(0, 5) : ''
 }
 
+// 解析 'YYYY-MM-DD HH:mm:ss'：iOS 不支持 '-' 形式，统一替换为 '/'
+export function parseDateTime(str) {
+  if (!str) return null
+  const d = new Date(String(str).replace(/-/g, '/'))
+  return isNaN(d.getTime()) ? null : d
+}
+
+// 毫秒剩余时长格式化为 mm:ss
+export function fmtCountdown(ms) {
+  const total = Math.max(Math.floor((ms || 0) / 1000), 0)
+  const m = String(Math.floor(total / 60)).padStart(2, '0')
+  const s = String(total % 60).padStart(2, '0')
+  return `${m}:${s}`
+}
+
 // 评分格式化（DECIMAL 返回为字符串）
 export function fmtRating(r) {
   return Number(r || 0).toFixed(1)

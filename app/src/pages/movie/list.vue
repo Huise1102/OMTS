@@ -6,7 +6,7 @@
         <input
           class="search__input"
           v-model="keyword"
-          placeholder="搜索影片名称"
+          placeholder="搜索影片 / 导演 / 主演"
           confirm-type="search"
           @confirm="onSearch"
         />
@@ -49,11 +49,28 @@
     </view>
 
     <!-- 列表 -->
-    <view class="list">
+    <view v-if="loading" class="list">
+      <view v-for="i in 4" :key="i" class="movie">
+        <skeleton-block width="150rpx" height="210rpx" :radius="20" />
+        <view class="movie__info">
+          <skeleton-block width="55%" height="36rpx" />
+          <view class="movie__skeleton-line"><skeleton-block width="30%" height="24rpx" /></view>
+          <view class="movie__skeleton-line"><skeleton-block width="45%" height="22rpx" /></view>
+          <view class="movie__skeleton-line"><skeleton-block width="40%" height="22rpx" /></view>
+        </view>
+      </view>
+    </view>
+    <view v-else class="list">
       <view v-for="m in movies" :key="m.id" class="movie" @tap="goDetail(m)">
         <movie-poster :title="m.title" :sub="m.version" :width="150" :height="210" />
         <view class="movie__info">
-          <text class="movie__title">{{ m.title }}</text>
+          <text class="movie__title">
+            <text
+              v-for="(seg, i) in titleSegments(m.title)"
+              :key="i"
+              :class="{ hl: seg.hit }"
+            >{{ seg.text }}</text>
+          </text>
           <text class="movie__rating">{{ fmtRating(m.rating) }}分</text>
           <text class="movie__meta">{{ m.director || '未知' }} 导演</text>
           <text class="movie__meta">{{ m.duration }}分钟 · {{ m.language }}</text>
@@ -67,13 +84,21 @@
       </view>
     </view>
 
-    <view v-if="loaded && !movies.length" class="empty">暂无相关影片</view>
+    <empty-state
+      v-if="loaded && !movies.length"
+      title="暂无相关影片"
+      desc="换个关键词或类型试试"
+    />
+
+    <view v-if="loaded && movies.length" class="list-more">
+      {{ loadingMore ? '加载中…' : (hasMore ? '' : '没有更多了') }}
+    </view>
   </view>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { getCategory, getMovieList } from '../../api/movie'
 import { useBookingStore } from '../../store/booking'
 import { useFilterStore } from '../../store/filter'
@@ -99,17 +124,59 @@ const sort = ref('')
 const categories = ref([])
 const movies = ref([])
 const loaded = ref(false)
+const loading = ref(true)
+const pageSize = 10
+const page = ref(1)
+const hasMore = ref(true)
+const loadingMore = ref(false)
 
-function loadList() {
-  const params = {}
+function buildParams() {
+  const params = { page: page.value, pageSize }
   if (status.value) params.status = status.value
   if (typeId.value) params.typeId = typeId.value
   if (keyword.value) params.keyword = keyword.value
   if (sort.value) params.sort = sort.value
-  getMovieList(params).then(d => {
-    movies.value = d || []
+  return params
+}
+
+function loadList(reset = true) {
+  if (!reset) {
+    if (loadingMore.value || !hasMore.value || loading.value) return Promise.resolve()
+    loadingMore.value = true
+  } else {
+    page.value = 1
+    hasMore.value = true
+    loading.value = true
+  }
+  return getMovieList(buildParams()).then(d => {
+    const list = d || []
+    movies.value = reset ? list : movies.value.concat(list)
+    hasMore.value = list.length === pageSize
+  }).catch(() => {}).finally(() => {
     loaded.value = true
-  }).catch(() => { loaded.value = true })
+    loading.value = false
+    loadingMore.value = false
+  })
+}
+
+// 把片名按关键词拆成命中/未命中片段，仅命中部分高亮
+function titleSegments(title) {
+  const text = title || ''
+  const kw = keyword.value.trim()
+  if (!kw) return [{ text, hit: false }]
+  const lower = text.toLowerCase()
+  const target = kw.toLowerCase()
+  const parts = []
+  let from = 0
+  let idx = lower.indexOf(target)
+  while (idx >= 0) {
+    if (idx > from) parts.push({ text: text.slice(from, idx), hit: false })
+    parts.push({ text: text.slice(idx, idx + kw.length), hit: true })
+    from = idx + kw.length
+    idx = lower.indexOf(target, from)
+  }
+  if (from < text.length) parts.push({ text: text.slice(from), hit: false })
+  return parts.length ? parts : [{ text, hit: false }]
 }
 
 onLoad(() => {
@@ -138,6 +205,12 @@ onShow(() => {
 })
 
 function onSearch() { loadList() }
+onPullDownRefresh(() => { loadList().finally(() => uni.stopPullDownRefresh()) })
+onReachBottom(() => {
+  if (!hasMore.value || loadingMore.value) return
+  page.value += 1
+  loadList(false)
+})
 function switchStatus(v) { status.value = v; loadList() }
 function switchType(v) { typeId.value = v; loadList() }
 function switchSort(v) { sort.value = v; loadList() }
@@ -280,6 +353,10 @@ function goBuy(m) {
     color: $text-main;
   }
 
+  &__skeleton-line {
+    margin-top: 12rpx;
+  }
+
   &__rating {
     display: inline-block;
     align-self: flex-start;
@@ -323,5 +400,20 @@ function goBuy(m) {
   font-weight: 600;
 
   &:active { background: $c-primary-dark; }
+}
+
+/* 搜索命中片段：主题红浅底 */
+.hl {
+  color: $c-primary;
+  background: $c-primary-soft;
+  border-radius: 8rpx;
+  padding: 0 4rpx;
+}
+
+.list-more {
+  text-align: center;
+  font-size: $fs-caption;
+  color: $text-light;
+  padding: $sp-lg 0;
 }
 </style>

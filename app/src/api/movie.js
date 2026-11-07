@@ -17,3 +17,15 @@ export const getMovieList = (params) => request({ url: '/movie/list', data: para
 
 // 影片详情
 export const getMovieDetail = (id) => request({ url: `/movie/detail/${id}` })
+
+// 收藏列表
+export const getFavorites = () => request({ url: '/movie/favorite/list' })
+
+// 收藏状态
+export const getFavoriteStatus = (movieId) => request({ url: `/movie/favorite/status/${movieId}` })
+
+// 加入收藏
+export const addFavorite = (movieId) => request({ url: `/movie/favorite/${movieId}`, method: 'POST' })
+
+// 取消收藏
+export const removeFavorite = (movieId) => request({ url: `/movie/favorite/${movieId}`, method: 'DELETE' })

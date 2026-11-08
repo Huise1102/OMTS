@@ -1,7 +1,7 @@
 # 星辉影城 · 电影院在线购票系统
 
 一套面向移动端的在线购票系统，覆盖 **影片推荐 → 选场次 → 选座 → 下单支付 → 订单管理 → 观影指南** 全流程，
-并内置基于**通义千问 Qwen Function Calling** 的智能购票助手（自然语言下单 / 退票，写操作需二次确认）。
+并内置**支持 Function Calling 的智能购票助手**（通义千问云端或本地 Ollama，自然语言下单 / 退票，写操作需二次确认）。
 
 前端采用 uni-app（Vue 3 + Vite + Pinia），一套代码同时构建 **H5** 与 **微信小程序**；
 后端为 Node.js + Express + MySQL。数据为真实经典影片的**元数据**（片名、导演、主演、片长、评分、简介），不含任何影片文件与剧照。
@@ -45,7 +45,7 @@
 | 后端 | Node.js + Express 4 | RESTful API，统一响应 `{code,message,data}` |
 | 数据库 | MySQL 8（utf8mb4） | `mysql2/promise` 连接池 + 事务 |
 | 鉴权 | JWT + bcryptjs | 密码 bcrypt 加密存储 |
-| 大模型 | 通义千问 Qwen（`qwen-plus`） | Function Calling 工具调用 |
+| 大模型 | 通义千问 Qwen（`qwen-plus`）/ 本地 Ollama | 通过 `LLM_PROVIDER` 切换，均使用 OpenAI 兼容接口 + Function Calling |
 
 > 未使用第三方 UI 组件库，统一采用自研 SCSS 组件样式（「胶片暖棕」主题：赤陶红 `#B9462F` + 琥珀金 `#E0A44A` + 暖白纸感底色 `#FAF7F2`），
 > 设计变量集中在 `app/src/uni.scss`，以保证双端渲染一致、体积可控，避免 uni-ui/uView 在小程序端的样式差异。
@@ -108,7 +108,7 @@ flowchart LR
     B --> C["路由层<br/>auth / movie / showtime / order / chat"]
     C --> D["MySQL 连接池<br/>mysql2/promise + 事务"]
     C --> E["Agent 编排<br/>tools / agent / confirm"]
-    E -->|Function Calling| F["通义千问 Qwen"]
+    E -->|Function Calling| F["大模型<br/>Qwen / Ollama"]
     E --> D
     D --> G[("cinema_db<br/>14 张表")]
 ```
@@ -175,7 +175,7 @@ NODE_PATH=server/node_modules node database/seed_movies.js
 
 ```bash
 cd server
-copy .env.example .env      # 填写 DB_PASSWORD 与 QWEN_API_KEY
+copy .env.example .env      # 填写 DB_PASSWORD 与大模型配置（QWEN_* 或 OLLAMA_*）
 npm install
 npm start                   # http://localhost:3000
 ```
@@ -187,9 +187,14 @@ npm start                   # http://localhost:3000
 | `PORT` | 后端监听端口，默认 3000 |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | MySQL 连接 |
 | `JWT_SECRET` | 令牌签名密钥，生产环境务必更换 |
-| `QWEN_API_KEY` | 通义千问 API Key（未配置时助手接口会返回错误提示） |
+| `LLM_PROVIDER` | 大模型来源：`qwen`（默认，通义千问）或 `ollama`（本地模型） |
+| `LLM_TIMEOUT_MS` | 请求超时毫秒数，默认 30000；本地模型建议 120000 |
+| `QWEN_API_KEY` | 通义千问 API Key（`LLM_PROVIDER=qwen` 时必填） |
 | `QWEN_BASE_URL` | 通义千问兼容模式地址，默认 `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `QWEN_MODEL` | 默认 `qwen-plus` |
+| `OLLAMA_BASE_URL` | 本地 Ollama 地址，默认 `http://127.0.0.1:11434/v1` |
+| `OLLAMA_MODEL` | 本地模型名，默认 `qwen3:8b`（需支持工具调用，`deepseek-r1` 不支持） |
+| `OLLAMA_API_KEY` | Ollama 兼容接口占位值，默认 `ollama` |
 
 启动时会自动执行一次「定时占座」（为未来场次补充已售座位），之后每天 02:00 自动执行；
 同时执行一次「超时取消」，之后每 5 分钟取消超过支付窗口的待支付订单并释放座位。
@@ -273,7 +278,7 @@ npm run build:mp-weixin     # 产物：app/dist/build/mp-weixin
    `query_movies`（影片推荐/搜索）、`query_showtimes`（场次）、`query_seats`（座位）、
    `query_orders`（我的订单）、`query_guide`（观影指南问答）、
    `create_order`（下单）、`refund_order`（退票）。
-2. 模型在 `qwen-plus` 的 Function Calling 下解析用户意图并返回工具调用；
+2. 模型（通义千问 `qwen-plus` 或本地 Ollama 如 `qwen3:8b`）在 Function Calling 下解析用户意图并返回工具调用；
    `agent.js` 执行工具、把结果回填给模型，形成多轮「补参数 → 执行」闭环。
 3. **不可逆写操作**（下单、退票）不直接执行：`confirm.js` 生成 `pendingAction`，
    前端聊天页渲染确认卡片，用户点击确认后才调用真实 `/api/order` 接口。
@@ -365,7 +370,7 @@ A：该片当天没有排片，页面会自动跳到最近有场次的日期；�
 A：检查 `src/config.js` 中 `MP-WEIXIN` 的 `BASE_URL` 是否为电脑局域网 IP（不能是 `localhost`），并在开发者工具「详情 → 本地设置」勾选**不校验合法域名**，手机与电脑需同一 Wi-Fi。
 
 **Q：智能助手提示「未配置大模型 API Key」或对话请求失败？**
-A：`server/.env` 的 `QWEN_API_KEY` / `QWEN_BASE_URL` 未配置或不正确，配置后重启后端。
+A：`server/.env` 的 `QWEN_API_KEY` / `QWEN_BASE_URL` 未配置或不正确，配置后重启后端。若使用本地 Ollama：确认已执行 `ollama serve`、已 `ollama pull` 对应模型，且 `OLLAMA_BASE_URL` 可访问。
 
 **Q：扫码取票码识别不到？**
 A：取票码内容为 `CINEMA:<订单号>` 纯文本，普通扫码工具可识别；若用支付类 App 扫可能不识别，属正常现象。
@@ -390,7 +395,7 @@ A：下单时服务端会在事务内复查该场次座位占用情况，说明�
 - [uni-app](https://uniapp.dcloud.net.cn/)、[Vue 3](https://vuejs.org/)、[Vite](https://vitejs.dev/)、[Pinia](https://pinia.vuejs.org/)：跨端框架、构建工具与状态管理
 - [Express](https://expressjs.com/)、[mysql2](https://github.com/sidorares/node-mysql2)：后端服务与数据库访问
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)：取票二维码生成
-- [通义千问 Qwen](https://dashscope.aliyun.com/)：智能购票助手的 Function Calling 能力
+- [通义千问 Qwen](https://dashscope.aliyun.com/)、[Ollama](https://ollama.com/)：智能购票助手的 Function Calling 能力
 - 影片片名、导演、主演、简介等元数据整理自公开资料，仅用于学习与技术演示，不包含任何影片文件与剧照
 
 感谢所有参与体验并给出反馈的朋友。若本项目对你有帮助，欢迎 Star 支持。

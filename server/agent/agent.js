@@ -1,4 +1,4 @@
-// 智能对话编排层：调用通义千问（OpenAI 兼容接口 + Function Calling），
+// 智能对话编排层：调用 OpenAI 兼容大模型（通义千问云端 / 本地 Ollama），
 // 维护多轮对话历史，执行"工具调用循环"直到模型给出最终回复
 const axios = require('axios');
 const pool = require('../config/db');
@@ -13,32 +13,65 @@ const SYSTEM_PROMPT = `你是"星辉影城"的智能购票助手。请遵守以�
 6. 回复简洁、语气友好，使用中文。
 7. 回复中不要使用任何 emoji 表情符号。`;
 
-// 调用通义千问（OpenAI 兼容模式）
-async function callQwen(messages) {
-  const url = `${process.env.QWEN_BASE_URL}/chat/completions`;
-  const resp = await axios.post(
-    url,
-    {
-      model: process.env.QWEN_MODEL || 'qwen-plus',
-      messages,
-      tools,
-      tool_choice: 'auto',
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.QWEN_API_KEY}`,
-        'Content-Type': 'application/json',
+// 解析大模型配置：LLM_PROVIDER=qwen（默认，通义千问）或 ollama（本地模型）
+function getLlmConfig() {
+  const provider = (process.env.LLM_PROVIDER || 'qwen').toLowerCase();
+  const isOllama = provider === 'ollama';
+  return {
+    provider,
+    isOllama,
+    baseUrl: isOllama
+      ? process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434/v1'
+      : process.env.QWEN_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model: isOllama
+      ? process.env.OLLAMA_MODEL || 'qwen2.5:7b'
+      : process.env.QWEN_MODEL || 'qwen-plus',
+    apiKey: isOllama
+      ? process.env.OLLAMA_API_KEY || 'ollama'
+      : process.env.QWEN_API_KEY || '',
+    // 本地模型在 CPU 上推理较慢，默认放宽到 120 秒
+    timeout: Number(process.env.LLM_TIMEOUT_MS) || (isOllama ? 120000 : 30000),
+  };
+}
+
+// 调用 OpenAI 兼容接口（通义千问 / Ollama 均适用）
+async function callModel(messages) {
+  const cfg = getLlmConfig();
+  const url = `${cfg.baseUrl.replace(/\/$/, '')}/chat/completions`;
+  try {
+    const resp = await axios.post(
+      url,
+      {
+        model: cfg.model,
+        messages,
+        tools,
+        tool_choice: 'auto',
+        stream: false,
       },
-      timeout: 30000,
+      {
+        headers: {
+          Authorization: `Bearer ${cfg.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: cfg.timeout,
+      }
+    );
+    return resp.data.choices[0].message;
+  } catch (e) {
+    if (cfg.isOllama && (e.code === 'ECONNREFUSED' || e.code === 'ECONNABORTED')) {
+      throw new Error(
+        `无法连接本地 Ollama（${cfg.baseUrl}），请确认已执行 ollama serve 并已拉取模型 ${cfg.model}`
+      );
     }
-  );
-  return resp.data.choices[0].message;
+    throw e;
+  }
 }
 
 // 处理一轮对话，返回 { reply, pendingAction }
 async function chat({ sessionId, userId, message }) {
-  if (!process.env.QWEN_API_KEY) {
-    throw new Error('未配置大模型 API Key（请在 .env 中设置 QWEN_API_KEY）');
+  const cfg = getLlmConfig();
+  if (!cfg.isOllama && !cfg.apiKey) {
+    throw new Error('未配置大模型 API Key（请在 .env 中设置 QWEN_API_KEY，或设置 LLM_PROVIDER=ollama 使用本地模型）');
   }
 
   // 读取历史（仅 user/assistant，最多最近 30 条）
@@ -60,7 +93,7 @@ async function chat({ sessionId, userId, message }) {
 
   // 工具调用循环：最多 3 轮，避免无限循环
   for (let i = 0; i < 3; i++) {
-    const msg = await callQwen(messages);
+    const msg = await callModel(messages);
 
     if (msg.tool_calls && msg.tool_calls.length) {
       // 回填 assistant 的工具调用消息

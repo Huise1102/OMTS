@@ -177,7 +177,7 @@ async function send() {
   } catch (e) {
     messages.value.push({
       role: 'assistant',
-      content: '抱歉，智能助手暂时不可用（请确认后端已配置通义千问 API Key），请稍后重试。'
+      content: '抱歉，智能助手暂时不可用（请确认后端已配置大模型服务：通义千问 API Key 或本地 Ollama），请稍后重试。'
     })
   } finally {
     sending.value = false
